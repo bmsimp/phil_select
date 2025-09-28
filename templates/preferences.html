@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Crew Preferences - Philmont Trek Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-cog"></i> Crew Preferences</h2>
+        <p class="lead">Set your crew's preferences for trek selection. These preferences will influence how itineraries are scored and ranked.</p>
+    </div>
+</div>
+
+<form method="POST">
+    <div class="row">
+        <!-- Crew Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-users"></i> Crew Information
+                </div>
+                <div class="card-body">
+                    {% if crew %}
+                        <p><strong>Crew Name:</strong> {{ crew.crew_name or 'Sample Crew' }}</p>
+                        <p><strong>Crew Size:</strong> {{ crew.crew_size }} members</p>
+                        <p><strong>Members:</strong></p>
+                        <ul class="list-unstyled">
+                            {% for member in crew_members %}
+                            <li><i class="fas fa-user"></i> {{ member.name or ('Crewmember ' + member.member_number|string) }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Regional Preferences -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-map-marked-alt"></i> Regional Preferences
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="area_important" name="area_important"
+                               {% if preferences and preferences.area_important %}checked{% endif %}>
+                        <label class="form-check-label" for="area_important">
+                            <strong>Area is important to us</strong>
+                        </label>
+                    </div>
+                    
+                    <div id="area_rankings" {% if not preferences or not preferences.area_important %}style="display:none;"{% endif %}>
+                        <p><small>Rank each area (1=most preferred, 4=least preferred):</small></p>
+                        
+                        <div class="row mb-2">
+                            <div class="col-8">South Country:</div>
+                            <div class="col-4">
+                                <select class="form-select form-select-sm" name="area_rank_south">
+                                    <option value="">-</option>
+                                    {% for i in range(1, 5) %}
+                                    <option value="{{ i }}" {% if preferences and preferences.area_rank_south == i %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-8">Central Country:</div>
+                            <div class="col-4">
+                                <select class="form-select form-select-sm" name="area_rank_central">
+                                    <option value="">-</option>
+                                    {% for i in range(1, 5) %}
+                                    <option value="{{ i }}" {% if preferences and preferences.area_rank_central == i %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-8">North Country:</div>
+                            <div class="col-4">
+                                <select class="form-select form-select-sm" name="area_rank_north">
+                                    <option value="">-</option>
+                                    {% for i in range(1, 5) %}
+                                    <option value="{{ i }}" {% if preferences and preferences.area_rank_north == i %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-8">Valle Vidal:</div>
+                            <div class="col-4">
+                                <select class="form-select form-select-sm" name="area_rank_valle_vidal">
+                                    <option value="">-</option>
+                                    {% for i in range(1, 5) %}
+                                    <option value="{{ i }}" {% if preferences and preferences.area_rank_valle_vidal == i %}selected{% endif %}>{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Difficulty Preferences -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-mountain"></i> Difficulty Preferences
+                </div>
+                <div class="card-body">
+                    <p><small>Select which difficulty levels your crew can handle:</small></p>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="difficulty_challenging" name="difficulty_challenging"
+                               {% if not preferences or preferences.difficulty_challenging %}checked{% endif %}>
+                        <label class="form-check-label" for="difficulty_challenging">
+                            <span class="badge difficulty-C">C</span> Challenging
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="difficulty_rugged" name="difficulty_rugged"
+                               {% if not preferences or preferences.difficulty_rugged %}checked{% endif %}>
+                        <label class="form-check-label" for="difficulty_rugged">
+                            <span class="badge difficulty-R">R</span> Rugged
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="difficulty_strenuous" name="difficulty_strenuous"
+                               {% if not preferences or preferences.difficulty_strenuous %}checked{% endif %}>
+                        <label class="form-check-label" for="difficulty_strenuous">
+                            <span class="badge difficulty-S">S</span> Strenuous
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="difficulty_super_strenuous" name="difficulty_super_strenuous"
+                               {% if not preferences or preferences.difficulty_super_strenuous %}checked{% endif %}>
+                        <label class="form-check-label" for="difficulty_super_strenuous">
+                            <span class="badge difficulty-SS">SS</span> Super Strenuous
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Altitude Preferences -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-arrow-up"></i> Altitude Factors
+                </div>
+                <div class="card-body">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="max_altitude_important" name="max_altitude_important"
+                               {% if preferences and preferences.max_altitude_important %}checked{% endif %}>
+                        <label class="form-check-label" for="max_altitude_important">
+                            <strong>Maximum altitude is important</strong>
+                        </label>
+                    </div>
+                    
+                    <div id="altitude_settings" {% if not preferences or not preferences.max_altitude_important %}style="display:none;"{% endif %}>
+                        <div class="mb-3">
+                            <label for="max_altitude_threshold" class="form-label">Maximum altitude threshold (feet):</label>
+                            <input type="number" class="form-control" id="max_altitude_threshold" name="max_altitude_threshold" 
+                                   value="{{ preferences.max_altitude_threshold if preferences else '' }}" 
+                                   placeholder="e.g., 10000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Peak Climbing -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-flag-checkered"></i> Peak Climbing Interests
+                </div>
+                <div class="card-body">
+                    <p><small>Select peaks you're interested in climbing:</small></p>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="climb_baldy" name="climb_baldy"
+                               {% if preferences and preferences.climb_baldy %}checked{% endif %}>
+                        <label class="form-check-label" for="climb_baldy">
+                            <i class="fas fa-mountain text-primary"></i> Baldy Mountain (12,441 ft)
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="climb_phillips" name="climb_phillips"
+                               {% if preferences and preferences.climb_phillips %}checked{% endif %}>
+                        <label class="form-check-label" for="climb_phillips">
+                            <i class="fas fa-mountain text-success"></i> Mount Phillips (11,742 ft)
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="climb_tooth" name="climb_tooth"
+                               {% if preferences and preferences.climb_tooth %}checked{% endif %}>
+                        <label class="form-check-label" for="climb_tooth">
+                            <i class="fas fa-mountain text-warning"></i> Tooth of Time (9,003 ft)
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="climb_inspiration_point" name="climb_inspiration_point"
+                               {% if preferences and preferences.climb_inspiration_point %}checked{% endif %}>
+                        <label class="form-check-label" for="climb_inspiration_point">
+                            <i class="fas fa-mountain text-info"></i> Inspiration Point
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-star"></i> Program Importance
+                </div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="programs_important" name="programs_important"
+                               {% if preferences and preferences.programs_important %}checked{% endif %}>
+                        <label class="form-check-label" for="programs_important">
+                            <strong>Activity programs are very important to our crew</strong>
+                        </label>
+                        <div class="form-text">
+                            When checked, program scores will have increased weight in the final calculations.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> Save Preferences
+                </button>
+                <a href="{{ url_for('scores') }}" class="btn btn-outline-primary btn-lg">
+                    Next: Score Programs <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Show/hide area rankings based on importance checkbox
+    document.getElementById('area_important').addEventListener('change', function() {
+        const rankings = document.getElementById('area_rankings');
+        rankings.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Show/hide altitude settings based on importance checkbox
+    document.getElementById('max_altitude_important').addEventListener('change', function() {
+        const settings = document.getElementById('altitude_settings');
+        settings.style.display = this.checked ? 'block' : 'none';
+    });
+</script>
+{% endblock %}

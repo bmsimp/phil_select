@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}{{ itinerary.itinerary_code }} Details - Philmont Trek Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('results') }}">Results</a></li>
+                <li class="breadcrumb-item active">{{ itinerary.itinerary_code }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-route"></i> Itinerary {{ itinerary.itinerary_code }}</h2>
+                <p class="lead mb-0">
+                    <span class="badge difficulty-{{ itinerary.difficulty }} me-2">{{ itinerary.difficulty }}</span>
+                    {{ itinerary.distance or 'N/A' }} miles
+                    {% if itinerary.max_altitude %}
+                        • Max Elevation: {{ "{:,}".format(itinerary.max_altitude) }} ft
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                {% if itinerary.covers_south %}
+                    <span class="badge bg-warning text-dark me-1"><i class="fas fa-sun"></i> South</span>
+                {% endif %}
+                {% if itinerary.covers_central %}
+                    <span class="badge bg-primary me-1"><i class="fas fa-mountain"></i> Central</span>
+                {% endif %}
+                {% if itinerary.covers_north %}
+                    <span class="badge bg-info me-1"><i class="fas fa-snowflake"></i> North</span>
+                {% endif %}
+                {% if itinerary.covers_valle_vidal %}
+                    <span class="badge bg-success me-1"><i class="fas fa-tree"></i> Valle Vidal</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if itinerary.description %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-file-alt"></i> Description
+            </div>
+            <div class="card-body">
+                <p>{{ itinerary.description }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Trek Statistics
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded mb-2">
+                            <h4 class="text-primary mb-0">{{ itinerary.total_camps or 'N/A' }}</h4>
+                            <small>Total Camps</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded mb-2">
+                            <h4 class="text-success mb-0">{{ itinerary.staffed_camps or 'N/A' }}</h4>
+                            <small>Staffed Camps</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded mb-2">
+                            <h4 class="text-warning mb-0">{{ itinerary.trail_camps or 'N/A' }}</h4>
+                            <small>Trail Camps</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 bg-light rounded mb-2">
+                            <h4 class="text-danger mb-0">{{ itinerary.dry_camps or 'N/A' }}</h4>
+                            <small>Dry Camps</small>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if itinerary.days_food_from_base %}
+                <hr>
+                <p class="mb-1"><strong>Food from Base:</strong> {{ itinerary.days_food_from_base }} days</p>
+                {% endif %}
+                {% if itinerary.layovers %}
+                <p class="mb-1"><strong>Layover Days:</strong> {{ itinerary.layovers }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-mountain"></i> Peak Opportunities
+            </div>
+            <div class="card-body">
+                {% if itinerary.baldy_mountain or itinerary.mount_phillips or itinerary.tooth_of_time or itinerary.inspiration_point or itinerary.trail_peak or itinerary.mountaineering %}
+                    <div class="row">
+                        {% if itinerary.baldy_mountain %}
+                        <div class="col-12 mb-2">
+                            <i class="fas fa-mountain text-primary"></i> 
+                            <strong>Baldy Mountain</strong> (12,441 ft)
+                        </div>
+                        {% endif %}
+                        {% if itinerary.mount_phillips %}
+                        <div class="col-12 mb-2">
+                            <i class="fas fa-mountain text-success"></i> 
+                            <strong>Mount Phillips</strong> (11,742 ft)
+                        </div>
+                        {% endif %}
+                        {% if itinerary.tooth_of_time %}
+                        <div class="col-12 mb-2">
+                            <i class="fas fa-mountain text-warning"></i> 
+                            <strong>Tooth of Time</strong> (9,003 ft)
+                        </div>
+                        {% endif %}
+                        {% if itinerary.inspiration_point %}
+                        <div class="col-12 mb-2">
+                            <i class="fas fa-mountain text-info"></i> 
+                            <strong>Inspiration Point</strong>
+                        </div>
+                        {% endif %}
+                        {% if itinerary.trail_peak %}
+                        <div class="col-12 mb-2">
+                            <i class="fas fa-mountain text-secondary"></i> 
+                            <strong>Trail Peak</strong>
+                        </div>
+                        {% endif %}
+                        {% if itinerary.mountaineering %}
+                        <div class="col-12 mb-2">
+                            <i class="fas fa-climbing text-danger"></i> 
+                            <strong>Mountaineering Program</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No specific peak climbing opportunities listed for this itinerary.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-campground"></i> Daily Itinerary
+            </div>
+            <div class="card-body">
+                {% if camps %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Camp</th>
+                                <th>Elevation</th>
+                                <th>Region</th>
+                                <th>Type</th>
+                                <th>Elevation Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set prev_elevation = 0 %}
+                            {% for camp in camps %}
+                            <tr>
+                                <td><strong>Day {{ camp.day }}</strong></td>
+                                <td>
+                                    <strong>{{ camp.name }}</strong>
+                                    {% if camp.is_staffed %}
+                                        <span class="badge bg-success ms-1">Staffed</span>
+                                    {% elif camp.is_trail_camp %}
+                                        <span class="badge bg-primary ms-1">Trail</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if camp.elevation %}
+                                        {{ "{:,}".format(camp.elevation) }} ft
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if camp.country == 'South' %}
+                                        <span class="badge bg-warning text-dark">South</span>
+                                    {% elif camp.country == 'Central' %}
+                                        <span class="badge bg-primary">Central</span>
+                                    {% elif camp.country == 'North' %}
+                                        <span class="badge bg-info">North</span>
+                                    {% elif camp.country %}
+                                        <span class="badge bg-secondary">{{ camp.country }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if camp.is_staffed %}
+                                        <i class="fas fa-home text-success" title="Staffed Camp"></i>
+                                    {% elif camp.is_trail_camp %}
+                                        <i class="fas fa-tent text-primary" title="Trail Camp"></i>
+                                    {% else %}
+                                        <i class="fas fa-question text-muted" title="Unknown"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if camp.elevation and prev_elevation %}
+                                        {% set elevation_change = camp.elevation - prev_elevation %}
+                                        {% if elevation_change > 0 %}
+                                            <span class="text-danger">+{{ "{:,}".format(elevation_change) }} ft</span>
+                                        {% elif elevation_change < 0 %}
+                                            <span class="text-success">{{ "{:,}".format(elevation_change) }} ft</span>
+                                        {% else %}
+                                            <span class="text-muted">No change</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                    {% set prev_elevation = camp.elevation or prev_elevation %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No camp information available for this itinerary.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+            <a href="{{ url_for('results') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Results
+            </a>
+            <div>
+                <button class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button class="btn btn-success" onclick="addToFavorites()">
+                    <i class="fas fa-star"></i> Add to Favorites
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function addToFavorites() {
+        // Simple localStorage favorite system
+        const favorites = JSON.parse(localStorage.getItem('philmont_favorites') || '[]');
+        const itineraryCode = '{{ itinerary.itinerary_code }}';
+        
+        if (!favorites.includes(itineraryCode)) {
+            favorites.push(itineraryCode);
+            localStorage.setItem('philmont_favorites', JSON.stringify(favorites));
+            
+            // Update button
+            const btn = document.querySelector('button[onclick="addToFavorites()"]');
+            btn.innerHTML = '<i class="fas fa-check"></i> Added to Favorites';
+            btn.className = 'btn btn-warning';
+            btn.onclick = null;
+            
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+            alert.innerHTML = `
+                <strong>Added to Favorites!</strong> Itinerary {{ itinerary.itinerary_code }} has been saved to your favorites.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').insertBefore(alert, document.querySelector('.row'));
+        }
+    }
+
+    // Check if already in favorites on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const favorites = JSON.parse(localStorage.getItem('philmont_favorites') || '[]');
+        const itineraryCode = '{{ itinerary.itinerary_code }}';
+        
+        if (favorites.includes(itineraryCode)) {
+            const btn = document.querySelector('button[onclick="addToFavorites()"]');
+            btn.innerHTML = '<i class="fas fa-star"></i> Favorited';
+            btn.className = 'btn btn-warning';
+            btn.onclick = null;
+        }
+    });
+</script>
+
+<style>
+    @media print {
+        .btn, .breadcrumb, .alert {
+            display: none !important;
+        }
+        
+        .card {
+            border: 1px solid #000 !important;
+            break-inside: avoid;
+        }
+        
+        .card-header {
+            background: #f8f9fa !important;
+            color: #000 !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        
+        .badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: #fff !important;
+        }
+    }
+</style>
+{% endblock %}

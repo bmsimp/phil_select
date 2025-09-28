@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Philmont Trek Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-trophy"></i> Trek Selection Results</h2>
+        <p class="lead">Ranked itineraries based on your crew's preferences and program scores.</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calculator"></i> Calculation Method
+            </div>
+            <div class="card-body">
+                <form method="GET" class="d-inline">
+                    <div class="input-group">
+                        <select name="method" class="form-select" onchange="this.form.submit()">
+                            <option value="Total" {% if calculation_method == 'Total' %}selected{% endif %}>Total Score</option>
+                            <option value="Average" {% if calculation_method == 'Average' %}selected{% endif %}>Average Score</option>
+                            <option value="Median" {% if calculation_method == 'Median' %}selected{% endif %}>Median Score</option>
+                            <option value="Mode" {% if calculation_method == 'Mode' %}selected{% endif %}>Mode Score</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </div>
+                </form>
+                <small class="text-muted">
+                    Using: <strong>{{ calculation_method }}</strong> method
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-medal"></i> Top Choices
+            </div>
+            <div class="card-body">
+                {% if results %}
+                    {% for result in results[:3] %}
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="me-3">
+                            {% if loop.index == 1 %}
+                                <i class="fas fa-medal text-warning fa-lg"></i>
+                            {% elif loop.index == 2 %}
+                                <i class="fas fa-medal text-secondary fa-lg"></i>
+                            {% else %}
+                                <i class="fas fa-medal text-danger fa-lg"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <strong>{{ result.itinerary.itinerary_code }}</strong>
+                            <span class="badge difficulty-{{ result.itinerary.difficulty }}">{{ result.itinerary.difficulty }}</span>
+                            <br>
+                            <small class="text-muted">Score: {{ "%.1f"|format(result.total_score) }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-list"></i> All Itineraries</span>
+                <button class="btn btn-sm btn-outline-light" onclick="exportResults()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Rank</th>
+                                <th>Itinerary</th>
+                                <th>Difficulty</th>
+                                <th>Distance</th>
+                                <th>Total Score</th>
+                                <th>Program</th>
+                                <th>Diff. Score</th>
+                                <th>Area</th>
+                                <th>Altitude</th>
+                                <th>Distance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr {% if loop.index <= 3 %}class="table-warning"{% endif %}>
+                                <td>
+                                    <strong>{{ result.ranking }}</strong>
+                                    {% if loop.index == 1 %}
+                                        <i class="fas fa-crown text-warning ms-1"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('itinerary_detail', code=result.itinerary.itinerary_code) }}" class="text-decoration-none">
+                                        <strong>{{ result.itinerary.itinerary_code }}</strong>
+                                    </a>
+                                    {% if result.itinerary.covers_south %}<i class="fas fa-sun text-warning" title="South Country"></i>{% endif %}
+                                    {% if result.itinerary.covers_central %}<i class="fas fa-mountain text-primary" title="Central Country"></i>{% endif %}
+                                    {% if result.itinerary.covers_north %}<i class="fas fa-snowflake text-info" title="North Country"></i>{% endif %}
+                                    {% if result.itinerary.covers_valle_vidal %}<i class="fas fa-tree text-success" title="Valle Vidal"></i>{% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge difficulty-{{ result.itinerary.difficulty }}">
+                                        {{ result.itinerary.difficulty }}
+                                    </span>
+                                </td>
+                                <td>{{ result.itinerary.distance or 'N/A' }} mi</td>
+                                <td><strong>{{ "%.1f"|format(result.total_score) }}</strong></td>
+                                <td>{{ "%.1f"|format(result.components.program_score) }}</td>
+                                <td>{{ "%.1f"|format(result.components.difficulty_score) }}</td>
+                                <td>{{ "%.1f"|format(result.components.area_score) }}</td>
+                                <td>{{ "%.1f"|format(result.components.altitude_score) }}</td>
+                                <td>{{ "%.1f"|format(result.components.distance_score) }}</td>
+                                <td>
+                                    <a href="{{ url_for('itinerary_detail', code=result.itinerary.itinerary_code) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> Understanding Your Results</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Score Components:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Program:</strong> Based on your activity preferences and program factor</li>
+                        <li><strong>Difficulty:</strong> Matches your accepted difficulty levels</li>
+                        <li><strong>Area:</strong> Regional preferences (if area is important)</li>
+                        <li><strong>Altitude:</strong> Altitude thresholds and preferences</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Difficulty Levels:</h6>
+                    <ul class="mb-2">
+                        <li><span class="badge difficulty-C">C</span> Challenging</li>
+                        <li><span class="badge difficulty-R">R</span> Rugged</li>
+                        <li><span class="badge difficulty-S">S</span> Strenuous</li>
+                        <li><span class="badge difficulty-SS">SS</span> Super Strenuous</li>
+                    </ul>
+                    
+                    <h6>Region Icons:</h6>
+                    <ul class="mb-0">
+                        <li><i class="fas fa-sun text-warning"></i> South Country</li>
+                        <li><i class="fas fa-mountain text-primary"></i> Central Country</li>
+                        <li><i class="fas fa-snowflake text-info"></i> North Country</li>
+                        <li><i class="fas fa-tree text-success"></i> Valle Vidal</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="{{ url_for('scores') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Scores
+            </a>
+            <button class="btn btn-success" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Results
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function exportResults() {
+        // Simple CSV export
+        let csv = 'Rank,Itinerary,Difficulty,Distance,Total Score,Program Score,Difficulty Score,Area Score,Altitude Score,Distance Score\n';
+        
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const rank = cells[0].textContent.trim().replace('👑', '').trim();
+            const itinerary = cells[1].textContent.trim().split('\n')[0];
+            const difficulty = cells[2].textContent.trim();
+            const distance = cells[3].textContent.trim().replace(' mi', '');
+            const totalScore = cells[4].textContent.trim();
+            const programScore = cells[5].textContent.trim();
+            const difficultyScore = cells[6].textContent.trim();
+            const areaScore = cells[7].textContent.trim();
+            const altitudeScore = cells[8].textContent.trim();
+            const distanceScore = cells[9].textContent.trim();
+            
+            csv += `${rank},"${itinerary}","${difficulty}","${distance}",${totalScore},${programScore},${difficultyScore},${areaScore},${altitudeScore},${distanceScore}\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'philmont_results.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Auto-refresh every 30 seconds if user is actively scoring
+    let autoRefresh = false;
+    
+    function toggleAutoRefresh() {
+        autoRefresh = !autoRefresh;
+        if (autoRefresh) {
+            const interval = setInterval(() => {
+                if (!autoRefresh) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                // Refresh results
+                fetch(`/api/calculate?method={{ calculation_method }}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Results updated');
+                        // Could update the table dynamically here
+                    })
+                    .catch(err => console.error('Auto-refresh failed:', err));
+            }, 30000);
+        }
+    }
+</script>
+
+<style>
+    @media print {
+        .btn, .card-header button, .alert {
+            display: none !important;
+        }
+        
+        .table {
+            font-size: 0.8em;
+        }
+        
+        .badge {
+            border: 1px solid #000 !important;
+            color: #000 !important;
+            background: #fff !important;
+        }
+    }
+</style>
+{% endblock %}

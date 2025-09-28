@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h2>Crew Member Program Survey</h2>
+        <p class="text-muted">Please fill out this survey to help us understand your interests and experience levels with various Philmont programs.</p>
+        
+        <form method="POST" action="/survey">
+            <!-- Crew Member Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Personal Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">Are you an existing crew member or new member?</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="member_type" id="existing_member" value="existing" onchange="toggleMemberFields()">
+                                    <label class="form-check-label" for="existing_member">
+                                        I'm an existing crew member (select from list)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="member_type" id="new_member" value="new" checked onchange="toggleMemberFields()">
+                                    <label class="form-check-label" for="new_member">
+                                        I'm a new member (enter my information)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Existing Member Selection -->
+                    <div class="row" id="existing_member_section" style="display: none;">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="existing_member_id" class="form-label">Select Your Name *</label>
+                                <select class="form-select" id="existing_member_id" name="existing_member_id" onchange="fillMemberInfo()">
+                                    <option value="">Select your name...</option>
+                                </select>
+                                <small class="text-muted">Don't see your name? Switch to "new member" and enter your details.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- New Member Information -->
+                    <div id="new_member_section">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common Fields for Both New and Existing Members -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="crew_id" class="form-label">Crew *</label>
+                                <select class="form-select" id="crew_id" name="crew_id" required onchange="loadCrewMembers()">
+                                    <option value="">Select your crew...</option>
+                                    {% for crew in crews %}
+                                    <option value="{{ crew.id }}">{{ crew.crew_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="age" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="age" name="age" min="1" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="skill_level" class="form-label">Overall Outdoor Experience</label>
+                                <select class="form-select" id="skill_level" name="skill_level">
+                                    <option value="1">Beginner (1)</option>
+                                    <option value="2">Some Experience (2)</option>
+                                    <option value="3" selected>Moderate Experience (3)</option>
+                                    <option value="4">Experienced (4)</option>
+                                    <option value="5">Expert (5)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Program Interest Ratings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Program Interest & Experience Rating</h5>
+                    <small class="text-muted">Rate each program from 0-20 based on your interest and experience level (0 = No Interest/No Experience, 20 = Very High Interest/Very Experienced)</small>
+                </div>
+                <div class="card-body">
+                    {% set current_category = '' %}
+                    {% for program in programs %}
+                        {% if program.category != current_category %}
+                            {% set current_category = program.category %}
+                            <h6 class="mt-3 mb-3 text-primary">{{ current_category }}</h6>
+                        {% endif %}
+                        
+                        <div class="mb-4 p-3" style="border: 1px solid #dee2e6; border-radius: 0.375rem; background-color: #f8f9fa;">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <label for="program_{{ program.id }}" class="form-label fw-bold mb-0">
+                                        {{ program.name }}
+                                        <br><small class="text-muted">({{ program.code }})</small>
+                                    </label>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <input type="range" 
+                                               class="form-range me-3" 
+                                               id="program_{{ program.id }}" 
+                                               name="program_{{ program.id }}" 
+                                               min="0" 
+                                               max="20" 
+                                               value="10" 
+                                               style="width: 100%;"
+                                               oninput="document.getElementById('value_{{ program.id }}').textContent = this.value">
+                                        <span class="badge bg-secondary ms-2" style="min-width: 3em; text-align: center;">
+                                            <span id="value_{{ program.id }}">10</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">Submit Program Survey</button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="/" class="btn btn-outline-secondary">Cancel and Return Home</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Initialize all range values on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type="range"]').forEach(function(range) {
+        const valueSpan = document.getElementById('value_' + range.id.split('_')[1]);
+        valueSpan.textContent = range.value;
+    });
+});
+
+function toggleMemberFields() {
+    const existingSelected = document.getElementById('existing_member').checked;
+    const existingSection = document.getElementById('existing_member_section');
+    const newSection = document.getElementById('new_member_section');
+    const nameField = document.getElementById('name');
+    const emailField = document.getElementById('email');
+    
+    if (existingSelected) {
+        existingSection.style.display = 'block';
+        newSection.style.display = 'none';
+        nameField.required = false;
+        emailField.required = false;
+        loadCrewMembers();
+    } else {
+        existingSection.style.display = 'none';
+        newSection.style.display = 'block';
+        nameField.required = true;
+        emailField.required = true;
+        // Clear existing member selection
+        document.getElementById('existing_member_id').value = '';
+    }
+}
+
+function loadCrewMembers() {
+    const crewId = document.getElementById('crew_id').value;
+    const memberSelect = document.getElementById('existing_member_id');
+    
+    // Clear existing options
+    memberSelect.innerHTML = '<option value="">Select your name...</option>';
+    
+    if (!crewId) {
+        return;
+    }
+    
+    // Load crew members via AJAX
+    fetch(`/api/crew_members/${crewId}`)
+        .then(response => response.json())
+        .then(members => {
+            members.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = `${member.name}${member.email ? ' (' + member.email + ')' : ''}`;
+                option.dataset.name = member.name || '';
+                option.dataset.email = member.email || '';
+                option.dataset.age = member.age || '';
+                option.dataset.skillLevel = member.skill_level || '3';
+                memberSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading crew members:', error);
+        });
+}
+
+function fillMemberInfo() {
+    const memberSelect = document.getElementById('existing_member_id');
+    const selectedOption = memberSelect.options[memberSelect.selectedIndex];
+    
+    if (selectedOption && selectedOption.value) {
+        // Fill in the form fields with the selected member's info
+        document.getElementById('name').value = selectedOption.dataset.name || '';
+        document.getElementById('email').value = selectedOption.dataset.email || '';
+        document.getElementById('age').value = selectedOption.dataset.age || '';
+        document.getElementById('skill_level').value = selectedOption.dataset.skillLevel || '3';
+    }
+}
+</script>
+{% endblock %}

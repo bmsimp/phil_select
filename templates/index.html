@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Philmont Trek Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4" style="background: linear-gradient(135deg, #2c5530, #4a7c59);">
+            <div class="container">
+                <h1 class="display-4"><i class="fas fa-mountain"></i> Philmont Trek Selection</h1>
+                <p class="lead">Choose your perfect 12-day adventure at Philmont Scout Ranch</p>
+                <p>This digital tool replicates the functionality of the original Excel spreadsheet, helping your crew find the ideal trek itinerary based on your preferences and activity interests.</p>
+                <a href="{{ url_for('preferences') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-play"></i> Get Started
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-cog"></i> 1. Set Preferences
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Crew Preferences</h5>
+                <p class="card-text">Configure your crew's preferences for region, difficulty level, altitude, peak climbing opportunities, and hiking preferences.</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-map-marked-alt text-success"></i> Regional preferences (South, Central, North, Valle Vidal)</li>
+                    <li><i class="fas fa-mountain text-success"></i> Difficulty levels (Challenging to Super Strenuous)</li>
+                    <li><i class="fas fa-arrow-up text-success"></i> Altitude considerations</li>
+                    <li><i class="fas fa-flag-checkered text-success"></i> Peak climbing opportunities</li>
+                </ul>
+                <a href="{{ url_for('preferences') }}" class="btn btn-primary">
+                    <i class="fas fa-cog"></i> Set Preferences
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-star"></i> 2. Score Programs
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Activity Scoring</h5>
+                <p class="card-text">Rate each activity program (0-20 points) for each crew member. These scores help determine which itineraries best match your interests.</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-climbing text-primary"></i> Climbing & COPE programs</li>
+                    <li><i class="fas fa-history text-primary"></i> Historical & cultural activities</li>
+                    <li><i class="fas fa-crosshairs text-primary"></i> Range sports & shooting</li>
+                    <li><i class="fas fa-microscope text-primary"></i> STEM & outdoor skills</li>
+                </ul>
+                <a href="{{ url_for('scores') }}" class="btn btn-primary">
+                    <i class="fas fa-star"></i> Score Programs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-trophy"></i> 3. View Results
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Trek Rankings</h5>
+                <p class="card-text">See your personalized itinerary rankings based on your preferences and activity scores. Choose from different calculation methods.</p>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-sort-numeric-down text-warning"></i> Ranked by total score</li>
+                    <li><i class="fas fa-calculator text-warning"></i> Multiple calculation methods</li>
+                    <li><i class="fas fa-info-circle text-warning"></i> Detailed itinerary information</li>
+                    <li><i class="fas fa-route text-warning"></i> Daily camp schedules</li>
+                </ul>
+                <a href="{{ url_for('results') }}" class="btn btn-primary">
+                    <i class="fas fa-trophy"></i> View Results
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> About This Tool
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>How It Works</h5>
+                        <p>This web application replicates the complex scoring algorithms from the original Philmont Excel spreadsheet. It considers multiple factors:</p>
+                        <ul>
+                            <li><strong>Program Scores:</strong> Individual activity preferences weighted by a program factor</li>
+                            <li><strong>Crew Preferences:</strong> Region, difficulty, and special feature preferences</li>
+                            <li><strong>Altitude Factors:</strong> Maximum altitude and daily elevation change considerations</li>
+                            <li><strong>Aggregation Methods:</strong> Total, Average, Median, or Mode scoring</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Database Contents</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h3 class="text-primary">25</h3>
+                                    <small>Trek Itineraries</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h3 class="text-success">56</h3>
+                                    <small>Activity Programs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h3 class="text-warning">169</h3>
+                                    <small>Backcountry Camps</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h3 class="text-info">192</h3>
+                                    <small>Camp Assignments</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-lightbulb"></i> Quick Start Tips</h5>
+            <ul class="mb-0">
+                <li>Start by setting your crew preferences - this significantly impacts the scoring</li>
+                <li>Have each crew member score programs individually for the most accurate results</li>
+                <li>Try different calculation methods (Total vs Average) to see how they affect rankings</li>
+                <li>Click on any itinerary code in the results to see detailed information and daily schedules</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Program Scores - Philmont Trek Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-star"></i> Program Scores</h2>
+        <p class="lead">Rate each activity program from 0-20 points for each crew member. Higher scores indicate greater interest.</p>
+    </div>
+</div>
+
+<form method="POST">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-info-circle"></i> Scoring Guidelines</h5>
+                <ul class="mb-0">
+                    <li><strong>20 points:</strong> Extremely interested - this is a "must do" activity</li>
+                    <li><strong>15 points:</strong> Very interested - would really like to do this</li>
+                    <li><strong>10 points:</strong> Moderately interested - sounds fun</li>
+                    <li><strong>5 points:</strong> Slightly interested - might be okay</li>
+                    <li><strong>0 points:</strong> Not interested - would prefer to skip</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Program</th>
+                    {% for member in crew_members %}
+                    <th class="text-center" style="min-width: 80px;">
+                        {{ member.name or ('Member ' + member.member_number|string) }}
+                    </th>
+                    {% endfor %}
+                    <th class="text-center">Total</th>
+                    <th class="text-center">Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set current_category = '' %}
+                {% for program in programs %}
+                    {% if program.category != current_category %}
+                        {% set current_category = program.category %}
+                        <tr class="program-category">
+                            <td colspan="{{ crew_members|length + 3 }}">
+                                <strong><i class="fas fa-tag"></i> {{ current_category }}</strong>
+                            </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td>
+                            <strong>{{ program.name }}</strong>
+                            {% if program.old_name_comments %}
+                                <br><small class="text-muted">{{ program.old_name_comments }}</small>
+                            {% endif %}
+                        </td>
+                        {% for member in crew_members %}
+                        {% set score_key = member.id|string + '_' + program.id|string %}
+                        <td class="text-center">
+                            <input type="number" 
+                                   class="form-control score-input" 
+                                   name="score_{{ member.id }}_{{ program.id }}"
+                                   min="0" max="20" 
+                                   value="{{ existing_scores.get(score_key, '') }}"
+                                   data-program-id="{{ program.id }}"
+                                   onchange="calculateTotals({{ program.id }})">
+                        </td>
+                        {% endfor %}
+                        <td class="text-center">
+                            <strong id="total_{{ program.id }}">0</strong>
+                        </td>
+                        <td class="text-center">
+                            <span id="average_{{ program.id }}">0.0</span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-calculator"></i> Quick Actions
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Bulk Actions:</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="fillRandomScores()">
+                                    <i class="fas fa-random"></i> Random Scores
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="clearAllScores()">
+                                    <i class="fas fa-eraser"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Navigation:</h6>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('preferences') }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-arrow-left"></i> Back to Preferences
+                                </a>
+                                <a href="{{ url_for('results') }}" class="btn btn-outline-success btn-sm">
+                                    Results <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save"></i> Save Scores
+                </button>
+                <a href="{{ url_for('results') }}" class="btn btn-primary btn-lg">
+                    View Results <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function calculateTotals(programId) {
+        const inputs = document.querySelectorAll(`input[data-program-id="${programId}"]`);
+        let total = 0;
+        let count = 0;
+        
+        inputs.forEach(input => {
+            const value = parseInt(input.value) || 0;
+            total += value;
+            if (value > 0) count++;
+        });
+        
+        document.getElementById(`total_${programId}`).textContent = total;
+        
+        const average = count > 0 ? (total / inputs.length).toFixed(1) : '0.0';
+        document.getElementById(`average_${programId}`).textContent = average;
+    }
+
+    function fillRandomScores() {
+        if (confirm('This will fill all empty scores with random values (0-20). Continue?')) {
+            const inputs = document.querySelectorAll('input.score-input');
+            inputs.forEach(input => {
+                if (!input.value) {
+                    const randomScore = Math.floor(Math.random() * 21); // 0-20
+                    input.value = randomScore;
+                    const programId = input.getAttribute('data-program-id');
+                    calculateTotals(programId);
+                }
+            });
+        }
+    }
+
+    function clearAllScores() {
+        if (confirm('This will clear ALL scores. Are you sure?')) {
+            const inputs = document.querySelectorAll('input.score-input');
+            inputs.forEach(input => {
+                input.value = '';
+                const programId = input.getAttribute('data-program-id');
+                calculateTotals(programId);
+            });
+        }
+    }
+
+    // Calculate totals on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for program in programs %}
+        calculateTotals({{ program.id }});
+        {% endfor %}
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+S to save
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            document.querySelector('form').submit();
+        }
+    });
+</script>
+{% endblock %}

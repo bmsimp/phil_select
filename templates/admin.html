@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-users-cog"></i> Crew Administration</h2>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                <i class="fas fa-plus"></i> Add Crew Member
+            </button>
+        </div>
+
+        <!-- Crew Selection -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Select Crew</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/admin">
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label for="crew_id" class="form-label">Crew</label>
+                            <select class="form-select" id="crew_id" name="crew_id" onchange="this.form.submit()">
+                                <option value="">Select a crew...</option>
+                                {% for crew in crews %}
+                                <option value="{{ crew.id }}" {% if crew.id == selected_crew_id %}selected{% endif %}>
+                                    {{ crew.crew_name }} ({{ crew.crew_size }} members)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCrewModal">
+                                <i class="fas fa-plus"></i> New Crew
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if selected_crew %}
+        <!-- Crew Members List -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ selected_crew.crew_name }} - Members</h5>
+            </div>
+            <div class="card-body">
+                {% if crew_members %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Age</th>
+                                <th>Experience Level</th>
+                                <th>Survey Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in crew_members %}
+                            <tr>
+                                <td>{{ member.member_number }}</td>
+                                <td>
+                                    <strong>{{ member.name or 'Not Set' }}</strong>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ member.email or 'Not Set' }}</span>
+                                </td>
+                                <td>{{ member.age or '-' }}</td>
+                                <td>
+                                    {% if member.skill_level %}
+                                        <span class="badge bg-info">{{ member.skill_level }}/5</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Not Set</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if member.survey_completed %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Complete
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-clock"></i> Pending
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" 
+                                            onclick="editMember({{ member.id }}, '{{ member.name }}', '{{ member.email }}', {{ member.age or 'null' }}, {{ member.skill_level or '3' }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteMember({{ member.id }}, '{{ member.name }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No crew members added yet</h5>
+                    <p class="text-muted">Add crew members using the button above.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Member Modal -->
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="/admin/add_member">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Crew Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="crew_id" value="{{ selected_crew_id or '' }}">
+                    <div class="mb-3">
+                        <label for="add_name" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="add_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="add_email" name="email">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_age" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="add_age" name="age" min="1" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_skill_level" class="form-label">Experience Level</label>
+                                <select class="form-select" id="add_skill_level" name="skill_level">
+                                    <option value="1">Beginner (1)</option>
+                                    <option value="2">Some Experience (2)</option>
+                                    <option value="3" selected>Moderate (3)</option>
+                                    <option value="4">Experienced (4)</option>
+                                    <option value="5">Expert (5)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Member Modal -->
+<div class="modal fade" id="editMemberModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="/admin/edit_member">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Crew Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="member_id" id="edit_member_id">
+                    <input type="hidden" name="crew_id" value="{{ selected_crew_id or '' }}">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="edit_email" name="email">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_age" class="form-label">Age</label>
+                                <input type="number" class="form-control" id="edit_age" name="age" min="1" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_skill_level" class="form-label">Experience Level</label>
+                                <select class="form-select" id="edit_skill_level" name="skill_level">
+                                    <option value="1">Beginner (1)</option>
+                                    <option value="2">Some Experience (2)</option>
+                                    <option value="3">Moderate (3)</option>
+                                    <option value="4">Experienced (4)</option>
+                                    <option value="5">Expert (5)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Crew Modal -->
+<div class="modal fade" id="addCrewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="/admin/add_crew">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Crew</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="crew_name" class="form-label">Crew Name *</label>
+                        <input type="text" class="form-control" id="crew_name" name="crew_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="crew_size" class="form-label">Expected Crew Size</label>
+                        <input type="number" class="form-control" id="crew_size" name="crew_size" value="9" min="6" max="12">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Crew</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="delete-member-name"></strong>?</p>
+                <p class="text-muted">This will also delete all their program scores and survey responses.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="/admin/delete_member" style="display: inline;">
+                    <input type="hidden" name="member_id" id="delete_member_id">
+                    <input type="hidden" name="crew_id" value="{{ selected_crew_id or '' }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editMember(id, name, email, age, skillLevel) {
+    document.getElementById('edit_member_id').value = id;
+    document.getElementById('edit_name').value = name || '';
+    document.getElementById('edit_email').value = email || '';
+    document.getElementById('edit_age').value = age || '';
+    document.getElementById('edit_skill_level').value = skillLevel || '3';
+    new bootstrap.Modal(document.getElementById('editMemberModal')).show();
+}
+
+function deleteMember(id, name) {
+    document.getElementById('delete_member_id').value = id;
+    document.getElementById('delete-member-name').textContent = name || 'this member';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}
