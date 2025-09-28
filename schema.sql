@@ -76,6 +76,7 @@ CREATE TABLE itineraries (
     covers_central BOOLEAN DEFAULT FALSE,
     covers_north BOOLEAN DEFAULT FALSE,
     covers_valle_vidal BOOLEAN DEFAULT FALSE,
+    year INTEGER DEFAULT 2025,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -92,6 +93,7 @@ CREATE TABLE itinerary_camps (
     camp_id INTEGER NOT NULL,
     is_layover BOOLEAN DEFAULT FALSE,
     food_pickup BOOLEAN DEFAULT FALSE,
+    year INTEGER DEFAULT 2025,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (itinerary_id) REFERENCES itineraries(id),
     FOREIGN KEY (camp_id) REFERENCES camps(id),
@@ -104,6 +106,7 @@ CREATE TABLE itinerary_programs (
     itinerary_id INTEGER NOT NULL,
     program_id INTEGER NOT NULL,
     is_available BOOLEAN DEFAULT TRUE,
+    year INTEGER DEFAULT 2025,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (itinerary_id) REFERENCES itineraries(id),
     FOREIGN KEY (program_id) REFERENCES programs(id),
@@ -116,6 +119,7 @@ CREATE TABLE camp_programs (
     camp_id INTEGER NOT NULL,
     program_id INTEGER NOT NULL,
     is_available BOOLEAN DEFAULT TRUE,
+    year INTEGER DEFAULT 2025,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (camp_id) REFERENCES camps(id),
     FOREIGN KEY (program_id) REFERENCES programs(id),
@@ -151,7 +155,7 @@ CREATE TABLE crew_members (
 -- Crew preferences for various factors
 CREATE TABLE crew_preferences (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    crew_id INTEGER NOT NULL,
+    crew_id INTEGER NOT NULL UNIQUE, -- Ensure one preference set per crew
     -- Area preferences
     area_important BOOLEAN DEFAULT FALSE,
     area_rank_south INTEGER, -- 1-4 ranking
@@ -180,9 +184,16 @@ CREATE TABLE crew_preferences (
     hike_out_preference BOOLEAN DEFAULT TRUE,
     -- Program importance
     programs_important BOOLEAN DEFAULT FALSE,
+    -- Year for multi-year support
+    year INTEGER DEFAULT 2025,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (crew_id) REFERENCES crews(id)
+    FOREIGN KEY (crew_id) REFERENCES crews(id) ON DELETE CASCADE,
+    -- Ensure valid area rankings (1-4)
+    CHECK (area_rank_south IS NULL OR (area_rank_south >= 1 AND area_rank_south <= 4)),
+    CHECK (area_rank_central IS NULL OR (area_rank_central >= 1 AND area_rank_central <= 4)),
+    CHECK (area_rank_north IS NULL OR (area_rank_north >= 1 AND area_rank_north <= 4)),
+    CHECK (area_rank_valle_vidal IS NULL OR (area_rank_valle_vidal >= 1 AND area_rank_valle_vidal <= 4))
 );
 
 -- Individual program scores from crew members
@@ -192,11 +203,13 @@ CREATE TABLE program_scores (
     crew_member_id INTEGER NOT NULL,
     program_id INTEGER NOT NULL,
     score INTEGER NOT NULL, -- 0-20 scale typically
+    year INTEGER DEFAULT 2025, -- Year for crew-specific scoring
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (crew_id) REFERENCES crews(id),
-    FOREIGN KEY (crew_member_id) REFERENCES crew_members(id),
+    FOREIGN KEY (crew_id) REFERENCES crews(id) ON DELETE CASCADE,
+    FOREIGN KEY (crew_member_id) REFERENCES crew_members(id) ON DELETE CASCADE,
     FOREIGN KEY (program_id) REFERENCES programs(id),
-    UNIQUE(crew_member_id, program_id)
+    UNIQUE(crew_member_id, program_id, year), -- Ensure crew member scores are unique per program per year
+    CHECK (score >= 0 AND score <= 20) -- Validate score range
 );
 
 -- ===================================
@@ -230,10 +243,11 @@ CREATE TABLE crew_results (
     altitude_score DECIMAL(10,2) DEFAULT 0,
     distance_score DECIMAL(10,2) DEFAULT 0,
     calculation_method VARCHAR(20) DEFAULT 'Total', -- Total, Average, Median, Mode
+    year INTEGER DEFAULT 2025, -- Year for crew-specific results
     calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (crew_id) REFERENCES crews(id),
+    FOREIGN KEY (crew_id) REFERENCES crews(id) ON DELETE CASCADE,
     FOREIGN KEY (itinerary_id) REFERENCES itineraries(id),
-    UNIQUE(crew_id, itinerary_id)
+    UNIQUE(crew_id, itinerary_id, year) -- Ensure crew-specific results per year
 );
 
 -- Audit log for score calculations
@@ -243,8 +257,9 @@ CREATE TABLE calculation_log (
     calculation_type VARCHAR(50),
     parameters TEXT, -- JSON of parameters used
     results_count INTEGER,
+    year INTEGER DEFAULT 2025, -- Year for crew-specific calculations
     calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (crew_id) REFERENCES crews(id)
+    FOREIGN KEY (crew_id) REFERENCES crews(id) ON DELETE CASCADE
 );
 
 -- ===================================
@@ -305,6 +320,58 @@ LEFT JOIN itinerary_programs ip ON p.id = ip.program_id AND ip.is_available = TR
 GROUP BY p.id, p.name, p.category
 ORDER BY itinerary_count DESC, p.name;
 
+-- View for crew summary with preferences
+CREATE VIEW crew_summary AS
+SELECT 
+    c.id as crew_id,
+    c.crew_name,
+    c.crew_size,
+    COUNT(cm.id) as actual_members,
+    cp.area_important,
+    cp.programs_important,
+    CASE 
+        WHEN cp.area_important THEN 'Area preferences set'
+        WHEN cp.programs_important THEN 'Program preferences set' 
+        ELSE 'Basic preferences'
+    END as preference_type,
+    cp.year as preference_year,
+    c.created_at as crew_created
+FROM crews c
+LEFT JOIN crew_members cm ON c.id = cm.crew_id
+LEFT JOIN crew_preferences cp ON c.id = cp.crew_id
+GROUP BY c.id, c.crew_name, c.crew_size, cp.area_important, cp.programs_important, cp.year, c.created_at;
+
+-- View for crew program scoring summary
+CREATE VIEW crew_program_summary AS
+SELECT 
+    c.id as crew_id,
+    c.crew_name,
+    COUNT(DISTINCT cm.id) as members_count,
+    COUNT(DISTINCT ps.program_id) as programs_scored,
+    COUNT(ps.id) as total_scores,
+    ROUND(AVG(ps.score), 2) as avg_score,
+    ps.year as score_year
+FROM crews c
+JOIN crew_members cm ON c.id = cm.crew_id
+JOIN program_scores ps ON cm.id = ps.crew_member_id AND c.id = ps.crew_id
+GROUP BY c.id, c.crew_name, ps.year
+ORDER BY c.crew_name, ps.year;
+
+-- View for crew results with year isolation
+CREATE VIEW crew_results_summary AS
+SELECT 
+    c.crew_name,
+    cr.year,
+    COUNT(*) as itineraries_scored,
+    MIN(cr.ranking) as best_ranking,
+    MAX(cr.total_score) as highest_score,
+    cr.calculation_method,
+    MAX(cr.calculated_at) as last_calculation
+FROM crews c
+JOIN crew_results cr ON c.id = cr.crew_id
+GROUP BY c.id, c.crew_name, cr.year, cr.calculation_method
+ORDER BY c.crew_name, cr.year DESC;
+
 -- ===================================
 -- Indexes for Performance
 -- ===================================
@@ -317,6 +384,12 @@ CREATE INDEX idx_camps_type ON camps(is_staffed, is_trail_camp, is_dry_camp);
 CREATE INDEX idx_program_scores_crew ON program_scores(crew_id, program_id);
 CREATE INDEX idx_crew_results_ranking ON crew_results(crew_id, ranking);
 CREATE INDEX idx_itinerary_camps_day ON itinerary_camps(itinerary_id, day_number);
+-- Crew-specific indexes for better performance
+CREATE INDEX idx_crew_preferences_crew ON crew_preferences(crew_id);
+CREATE INDEX idx_crew_members_crew ON crew_members(crew_id, member_number);
+CREATE INDEX idx_program_scores_crew_year ON program_scores(crew_id, year);
+CREATE INDEX idx_crew_results_crew_year ON crew_results(crew_id, year, ranking);
+CREATE INDEX idx_calculation_log_crew ON calculation_log(crew_id, year);
 
 -- ===================================
 -- Default Configuration Data

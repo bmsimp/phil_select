@@ -63,27 +63,27 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('preferences') }}">
+                        <a class="nav-link" href="{{ url_for('preferences', crew_id=selected_crew_id) if selected_crew_id else url_for('preferences') }}">
                             <i class="fas fa-cog"></i> Preferences
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('scores') }}">
+                        <a class="nav-link" href="{{ url_for('scores', crew_id=selected_crew_id) if selected_crew_id else url_for('scores') }}">
                             <i class="fas fa-star"></i> Program Scores
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('survey') }}">
+                        <a class="nav-link" href="{{ url_for('survey', crew_id=selected_crew_id) if selected_crew_id else url_for('survey') }}">
                             <i class="fas fa-clipboard-list"></i> Member Survey
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('results') }}">
+                        <a class="nav-link" href="{{ url_for('results', crew_id=selected_crew_id) if selected_crew_id else url_for('results') }}">
                             <i class="fas fa-trophy"></i> Results
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin') }}">
+                        <a class="nav-link" href="{{ url_for('admin', crew_id=selected_crew_id) if selected_crew_id else url_for('admin') }}">
                             <i class="fas fa-users-cog"></i> Admin
                         </a>
                     </li>

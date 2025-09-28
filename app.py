@@ -293,23 +293,59 @@ def invalidate_crew_cache(crew_id):
 @app.route('/')
 def index():
     """Home page"""
-    return render_template('index.html')
+    # Get crew_id from query parameter for navigation context
+    crew_id = request.args.get('crew_id', type=int)
+    
+    conn = get_db_connection()
+    crews = conn.execute('SELECT * FROM crews ORDER BY crew_name').fetchall()
+    
+    # If no crew_id specified, default to the first crew
+    if not crew_id and crews:
+        crew_id = crews[0]['id']
+    
+    conn.close()
+    
+    return render_template('index.html', 
+                         crews=crews,
+                         selected_crew_id=crew_id)
 
 @app.route('/preferences')
 def preferences():
     """Crew preferences page"""
-    crew_id = 1  # Default to sample crew
+    # Get crew_id from query parameter, default to first crew
+    crew_id = request.args.get('crew_id', type=int)
+    
+    conn = get_db_connection()
+    crews = conn.execute('SELECT * FROM crews ORDER BY crew_name').fetchall()
+    
+    # If no crew_id specified, default to the first crew
+    if not crew_id and crews:
+        crew_id = crews[0]['id']
+    
+    conn.close()
+    
+    if not crew_id:
+        flash('No crews found. Please create a crew first.', 'error')
+        return redirect(url_for('admin'))
+    
     crew, crew_members, preferences = get_crew_info(crew_id)
     
     return render_template('preferences.html', 
                          crew=crew, 
                          crew_members=crew_members, 
-                         preferences=preferences)
+                         preferences=preferences,
+                         crews=crews,
+                         selected_crew_id=crew_id)
 
 @app.route('/preferences', methods=['POST'])
 def save_preferences():
     """Save crew preferences"""
-    crew_id = 1  # Default to sample crew
+    # Get crew_id from form data
+    crew_id = request.form.get('crew_id', type=int)
+    if not crew_id:
+        flash('Please select a crew.', 'error')
+        return redirect(url_for('preferences'))
+    
     conn = get_db_connection()
     
     def safe_int(value):
@@ -398,12 +434,26 @@ def save_preferences():
     conn.close()
     flash('Preferences saved successfully!', 'success')
     
-    return redirect(url_for('preferences'))
+    return redirect(url_for('preferences', crew_id=crew_id))
 
 @app.route('/scores')
 def scores():
     """Program scoring page"""
-    crew_id = 1  # Default to sample crew
+    # Get crew_id from query parameter, default to first crew
+    crew_id = request.args.get('crew_id', type=int)
+    
+    conn = get_db_connection()
+    crews = conn.execute('SELECT * FROM crews ORDER BY crew_name').fetchall()
+    
+    # If no crew_id specified, default to the first crew
+    if not crew_id and crews:
+        crew_id = crews[0]['id']
+    
+    conn.close()
+    
+    if not crew_id:
+        flash('No crews found. Please create a crew first.', 'error')
+        return redirect(url_for('admin'))
     
     crew, crew_members, _ = get_crew_info(crew_id)
     programs = get_programs()
@@ -413,12 +463,19 @@ def scores():
                          crew=crew, 
                          crew_members=crew_members, 
                          programs=programs,
-                         existing_scores=existing_scores)
+                         existing_scores=existing_scores,
+                         crews=crews,
+                         selected_crew_id=crew_id)
 
 @app.route('/scores', methods=['POST'])
 def save_scores():
     """Save program scores"""
-    crew_id = 1  # Default to sample crew
+    # Get crew_id from form data
+    crew_id = request.form.get('crew_id', type=int)
+    if not crew_id:
+        flash('Please select a crew.', 'error')
+        return redirect(url_for('scores'))
+    
     conn = get_db_connection()
     
     # Delete existing scores for this crew
@@ -445,20 +502,36 @@ def save_scores():
     conn.close()
     flash('Scores saved successfully!', 'success')
     
-    return redirect(url_for('scores'))
+    return redirect(url_for('scores', crew_id=crew_id))
 
 @app.route('/results')
 def results():
     """Results and rankings page"""
-    crew_id = 1  # Default to sample crew
+    # Get crew_id from query parameter, default to first crew
+    crew_id = request.args.get('crew_id', type=int)
     method = request.args.get('method', 'Total')
+    
+    conn = get_db_connection()
+    crews = conn.execute('SELECT * FROM crews ORDER BY crew_name').fetchall()
+    
+    # If no crew_id specified, default to the first crew
+    if not crew_id and crews:
+        crew_id = crews[0]['id']
+    
+    conn.close()
+    
+    if not crew_id:
+        flash('No crews found. Please create a crew first.', 'error')
+        return redirect(url_for('admin'))
     
     scorer = PhilmontScorer(crew_id)
     results = scorer.calculate_itinerary_scores(method)
     
     return render_template('results.html', 
                          results=results, 
-                         calculation_method=method)
+                         calculation_method=method,
+                         crews=crews,
+                         selected_crew_id=crew_id)
 
 @app.route('/api/calculate')
 def api_calculate():
@@ -536,15 +609,26 @@ def itinerary_detail(code):
 @app.route('/survey')
 def survey():
     """Crew member program survey page"""
+    # Get crew_id from query parameter
+    crew_id = request.args.get('crew_id', type=int)
+    
     # Get all programs organized by category
     programs = get_programs()
     
     # Get all crews for the dropdown
     conn = get_db_connection()
     crews = conn.execute('SELECT * FROM crews ORDER BY crew_name').fetchall()
+    
+    # If no crew_id specified, default to the first crew
+    if not crew_id and crews:
+        crew_id = crews[0]['id']
+    
     conn.close()
     
-    return render_template('survey.html', programs=programs, crews=crews)
+    return render_template('survey.html', 
+                         programs=programs, 
+                         crews=crews,
+                         selected_crew_id=crew_id)
 
 @app.route('/survey', methods=['POST'])
 def submit_survey():

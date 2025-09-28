@@ -5,6 +5,7 @@
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 55,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -22,6 +23,7 @@ WHERE itinerary_code = '12-1';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 62,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -39,6 +41,7 @@ WHERE itinerary_code = '12-10';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 58,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -56,6 +59,7 @@ WHERE itinerary_code = '12-11';
 UPDATE itineraries SET 
     difficulty = 'SS',
     distance = 52,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 5,
@@ -74,6 +78,7 @@ WHERE itinerary_code = '12-12';
 UPDATE itineraries SET 
     difficulty = 'SS',
     distance = 49,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 4,
@@ -91,6 +96,7 @@ WHERE itinerary_code = '12-13';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 67,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 6,
@@ -107,6 +113,7 @@ WHERE itinerary_code = '12-14';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 59,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -123,6 +130,7 @@ WHERE itinerary_code = '12-15';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 61,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 5,
@@ -139,6 +147,7 @@ WHERE itinerary_code = '12-16';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 56,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -155,6 +164,7 @@ WHERE itinerary_code = '12-17';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 64,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -171,6 +181,7 @@ WHERE itinerary_code = '12-18';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 60,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -187,6 +198,7 @@ WHERE itinerary_code = '12-19';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 63,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -203,6 +215,7 @@ WHERE itinerary_code = '12-2';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 68,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -219,6 +232,7 @@ WHERE itinerary_code = '12-20';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 57,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -235,6 +249,7 @@ WHERE itinerary_code = '12-21';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 65,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -251,6 +266,7 @@ WHERE itinerary_code = '12-22';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 66,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 4,
@@ -268,6 +284,7 @@ WHERE itinerary_code = '12-23';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 64,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -284,6 +301,7 @@ WHERE itinerary_code = '12-24';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 69,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -300,6 +318,7 @@ WHERE itinerary_code = '12-3';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 61,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 6,
@@ -316,6 +335,7 @@ WHERE itinerary_code = '12-4';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 58,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 3,
     max_days_food = 4,
     staffed_camps = 6,
@@ -332,6 +352,7 @@ WHERE itinerary_code = '12-5';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 67,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 4,
@@ -349,6 +370,7 @@ WHERE itinerary_code = '12-6';
 UPDATE itineraries SET 
     difficulty = 'R',
     distance = 70,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -365,6 +387,7 @@ WHERE itinerary_code = '12-7';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 62,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
@@ -381,6 +404,7 @@ WHERE itinerary_code = '12-8';
 UPDATE itineraries SET 
     difficulty = 'S',
     distance = 63,
+    year = strftime('%Y', 'now'),
     days_food_from_base = 4,
     max_days_food = 5,
     staffed_camps = 5,
