@@ -168,6 +168,36 @@ def get_existing_scores(crew_id=1):
 class PhilmontScorer:
     def __init__(self, crew_id):
         self.crew_id = crew_id
+        self._scoring_factors = None
+    
+    def get_score_factor(self, factor_code):
+        """Get scoring factor from database (replicates Excel getScoreFactor method)"""
+        if self._scoring_factors is None:
+            self._load_scoring_factors()
+        
+        return self._scoring_factors.get(factor_code, 1.0)
+    
+    def _load_scoring_factors(self):
+        """Load scoring factors from database"""
+        conn = get_db_connection()
+        factors = conn.execute('''
+            SELECT factor_code, multiplier 
+            FROM scoring_factors 
+            WHERE is_active = TRUE
+        ''').fetchall()
+        conn.close()
+        
+        self._scoring_factors = {}
+        for factor in factors:
+            self._scoring_factors[factor['factor_code']] = float(factor['multiplier'])
+        
+        # Set defaults if not found in database
+        self._scoring_factors.setdefault('programFactor', 1.5)
+        self._scoring_factors.setdefault('difficultDelta', 1.0)
+        self._scoring_factors.setdefault('maxDifficult', 1.0)
+        self._scoring_factors.setdefault('maxSkill', 1.0)
+        self._scoring_factors.setdefault('skillDelta', 1.0)
+        self._scoring_factors.setdefault('mileageFactor', 1.0)
         
     def get_program_scores(self, method='Total'):
         """Calculate program scores using specified method (Total, Average, Median, Mode)"""
@@ -289,8 +319,8 @@ class PhilmontScorer:
             if program_id in program_scores:
                 total_score += program_scores[program_id]
         
-        # Apply program factor (typically 1.5x)
-        program_factor = 1.5
+        # Apply program factor from database
+        program_factor = self.get_score_factor('programFactor')
         return total_score * program_factor
     
     def _calculate_difficulty_score(self, itinerary, crew_prefs):
@@ -308,7 +338,13 @@ class PhilmontScorer:
         elif difficulty == 'SS' and crew_prefs.get('difficulty_super_strenuous', True):
             difficulty_accepted = True
         
-        return 100 if difficulty_accepted else 0
+        base_score = 100 if difficulty_accepted else 0
+        
+        # Apply difficulty factors from database
+        difficulty_delta = self.get_score_factor('difficultDelta')
+        max_difficulty = self.get_score_factor('maxDifficult')
+        
+        return base_score * difficulty_delta * max_difficulty
     
     def _calculate_area_score(self, itinerary, crew_prefs):
         """Calculate area preference score"""
@@ -345,7 +381,9 @@ class PhilmontScorer:
     def _calculate_distance_score(self, itinerary, crew_prefs):
         """Calculate distance-based score"""
         distance = itinerary['distance'] or 50
-        return max(0, 100 - abs(distance - 50))  # Prefer distances around 50 miles
+        base_score = max(0, 100 - abs(distance - 50))  # Prefer distances around 50 miles
+        mileage_factor = self.get_score_factor('mileageFactor')
+        return base_score * mileage_factor
     
     def _calculate_hike_score(self, itinerary, crew_prefs):
         """Calculate hike in/out preference score"""
