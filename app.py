@@ -507,6 +507,38 @@ class PhilmontScorer:
             else:
                 score -= 1200  # Penalty for no layovers when required
         
+        # Food resupply preferences
+        days_food_from_base = itinerary['days_food_from_base'] or 0
+        max_days_food = itinerary['max_days_food'] or 0
+        
+        if crew_prefs.get('prefer_frequent_resupply', False):
+            # Score based on days_food_from_base: 20 points for 1 day, 100 points for 9 days
+            # Formula: 20 + (days-1)*10, but inverted since we want fewer days to score higher
+            if days_food_from_base > 0:
+                # Invert the scoring: fewer days = higher score
+                base_score = 20 + (days_food_from_base - 1) * 10
+                inverted_score = 120 - base_score  # Max possible (100) + buffer (20)
+                score += inverted_score
+            
+            # Score based on max_days_food: 100 points for 1 day, 50 points for 6 days
+            # Already decreasing, so use directly
+            if max_days_food > 0:
+                food_score = 100 + (max_days_food - 1) * (-10)
+                score += max(food_score, 0)  # Don't go negative
+        
+        if crew_prefs.get('prefer_self_sufficient', False):
+            # Score based on days_food_from_base: more days = higher score
+            if days_food_from_base > 0:
+                base_score = 20 + (days_food_from_base - 1) * 10
+                score += base_score
+            
+            # Score based on max_days_food: inverted since we want more days
+            if max_days_food > 0:
+                # Invert the scoring: more days = higher score
+                base_score = 100 + (max_days_food - 1) * (-10)
+                inverted_score = 150 - base_score  # Invert the scale
+                score += max(inverted_score, 0)  # Don't go negative
+        
         return score
 
 # ===================================
@@ -788,6 +820,8 @@ def save_preferences():
                 max_dry_camps = ?,
                 showers_required = ?,
                 layovers_required = ?,
+                prefer_frequent_resupply = ?,
+                prefer_self_sufficient = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE crew_id = ?
         ''', (
@@ -815,6 +849,8 @@ def save_preferences():
             safe_int(request.form.get('max_dry_camps')),
             'showers_required' in request.form,
             'layovers_required' in request.form,
+            'prefer_frequent_resupply' in request.form,
+            'prefer_self_sufficient' in request.form,
             crew_id
         ))
     else:
@@ -824,8 +860,8 @@ def save_preferences():
             (crew_id, area_important, area_rank_south, area_rank_central, area_rank_north, area_rank_valle_vidal,
              max_altitude_important, max_altitude_threshold, difficulty_challenging, difficulty_rugged, 
              difficulty_strenuous, difficulty_super_strenuous, climb_baldy, climb_phillips, climb_tooth, 
-             climb_inspiration_point, climb_trail_peak, hike_in_preference, hike_out_preference, programs_important, adult_program_weight_enabled, adult_program_weight_percent, max_dry_camps, showers_required, layovers_required)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             climb_inspiration_point, climb_trail_peak, hike_in_preference, hike_out_preference, programs_important, adult_program_weight_enabled, adult_program_weight_percent, max_dry_camps, showers_required, layovers_required, prefer_frequent_resupply, prefer_self_sufficient)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             crew_id,
             'area_important' in request.form,
@@ -851,7 +887,9 @@ def save_preferences():
             safe_int(request.form.get('adult_program_weight_percent', 50)),
             safe_int(request.form.get('max_dry_camps')),
             'showers_required' in request.form,
-            'layovers_required' in request.form
+            'layovers_required' in request.form,
+            'prefer_frequent_resupply' in request.form,
+            'prefer_self_sufficient' in request.form
         ))
     
     conn.commit()
