@@ -5,47 +5,20 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h2><i class="fas fa-trophy"></i> Trek Selection Results</h2>
+        <h2><i class="fas fa-trophy"></            <a href="{{ url_for('program_chart', method=calculation_method) }}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar"></i> View Program Chart
+            </a>Trek Selection Results</h2>
         <p class="lead">Ranked itineraries based on your crew's preferences and program scores.</p>
     </div>
 </div>
 
-{% if is_admin %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5><i class="fas fa-users"></i> Select Crew</h5>
-                <form method="GET" id="crewSelectForm">
-                    <input type="hidden" name="method" value="{{ calculation_method }}">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <select name="crew_id" class="form-control" onchange="document.getElementById('crewSelectForm').submit()">
-                                {% for crew_option in crews %}
-                                <option value="{{ crew_option.id }}" {% if crew_option.id == selected_crew_id %}selected{% endif %}>
-                                    {{ crew_option.crew_name }} ({{ crew_option.crew_size }} members)
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Choose which crew to see results for</small>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% else %}
 <div class="row mb-3">
     <div class="col-12">
         <div class="alert alert-info">
-            <i class="fas fa-trophy"></i> <strong>{{ crews[0].crew_name }}</strong> - Trek selection results
+            <i class="fas fa-trophy"></i> Trek selection results for your crew
         </div>
     </div>
 </div>
-{% endif %}
 
 <div class="row mb-4">
     <div class="col-md-6">

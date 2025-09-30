@@ -6,41 +6,13 @@
         <h2>Crew Member Program Survey</h2>
         <p class="text-muted">Please fill out this survey to help us understand your interests and experience levels with various Philmont programs.</p>
         
-        {% if is_admin %}
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5><i class="fas fa-users"></i> Select Crew</h5>
-                        <form method="GET" id="crewSelectForm">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <select name="crew_id" class="form-control" onchange="document.getElementById('crewSelectForm').submit()">
-                                        {% for crew_option in crews %}
-                                        <option value="{{ crew_option.id }}" {% if crew_option.id == selected_crew_id %}selected{% endif %}>
-                                            {{ crew_option.crew_name }} ({{ crew_option.crew_size }} members)
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted">Choose which crew this survey is for</small>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% else %}
         <div class="row mb-3">
             <div class="col-12">
                 <div class="alert alert-info">
-                    <i class="fas fa-clipboard-list"></i> <strong>{{ crews[0].crew_name }}</strong> - Program interest survey
+                    <i class="fas fa-clipboard-list"></i> Program interest survey for your crew
                 </div>
             </div>
         </div>
-        {% endif %}
         
         <form method="POST" action="/survey">
             <!-- Crew Member Information -->
@@ -102,24 +74,13 @@
                     
                     <!-- Common Fields for Both New and Existing Members -->
                     <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="crew_id" class="form-label">Crew *</label>
-                                <select class="form-select" id="crew_id" name="crew_id" required onchange="loadCrewMembers()">
-                                    <option value="">Select your crew...</option>
-                                    {% for crew in crews %}
-                                    <option value="{{ crew.id }}" {% if crew.id == selected_crew_id %}selected{% endif %}>{{ crew.crew_name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="age" class="form-label">Age</label>
                                 <input type="number" class="form-control" id="age" name="age" min="1" max="100">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="skill_level" class="form-label">Overall Outdoor Experience</label>
                                 <select class="form-select" id="skill_level" name="skill_level">
@@ -226,36 +187,9 @@ function toggleMemberFields() {
     }
 }
 
-function loadCrewMembers() {
-    const crewId = document.getElementById('crew_id').value;
-    const memberSelect = document.getElementById('existing_member_id');
-    
-    // Clear existing options
-    memberSelect.innerHTML = '<option value="">Select your name...</option>';
-    
-    if (!crewId) {
-        return;
-    }
-    
-    // Load crew members via AJAX
-    fetch(`/api/crew_members/${crewId}`)
-        .then(response => response.json())
-        .then(members => {
-            members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = `${member.name}${member.email ? ' (' + member.email + ')' : ''}`;
-                option.dataset.name = member.name || '';
-                option.dataset.email = member.email || '';
-                option.dataset.age = member.age || '';
-                option.dataset.skillLevel = member.skill_level || '3';
-                memberSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading crew members:', error);
-        });
-}
+// function loadCrewMembers() {
+//     // Removed crew selection functionality
+// }
 
 function fillMemberInfo() {
     const memberSelect = document.getElementById('existing_member_id');
