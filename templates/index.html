@@ -18,12 +18,90 @@
     </div>
 </div>
 
-{% if not is_admin %}
+{% if is_admin %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="alert alert-success">
             <h5><i class="fas fa-user-shield"></i> Admin Access Active</h5>
             <p class="mb-0">You can switch between crews and access all administrative functions.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Contingent Management Section -->
+{% if is_admin %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users"></i> Contingent Management
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        {% if contingents %}
+                        <h6>Existing Contingents</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Year</th>
+                                        <th>Identifier</th>
+                                        <th>Arrival Date</th>
+                                        <th>Crews</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for contingent in contingents %}
+                                    <tr>
+                                        <td>{{ contingent.year }}</td>
+                                        <td><strong>{{ contingent.full_designation }}</strong></td>
+                                        <td>{{ contingent.arrival_date|format_arrival_date }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ contingent.crew_count }} crews</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewContingent({{ contingent.id }})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No contingents created yet. Create your first contingent to organize crews by arrival date and expedition.</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Create New Contingent</h6>
+                        <form method="POST" action="{{ url_for('create_contingent') }}">
+                            <div class="mb-3">
+                                <label for="year" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="year" name="year" value="2025" min="2024" max="2030" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="contingent_identifier" class="form-label">Contingent Identifier</label>
+                                <input type="text" class="form-control" id="contingent_identifier" name="contingent_identifier" placeholder="714-A" pattern="[0-9]{3,4}-[A-Z]{1,2}" maxlength="7" required style="text-transform: uppercase;">
+                                <div class="form-text">
+                                    <strong>Format:</strong> ###-A or ####-AB (e.g., 714-A, 0714-AB)<br>
+                                    <small class="text-info"><i class="fas fa-info-circle"></i> This identifier will be provided by Philmont in an email after your deposit is paid.</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description (Optional)</label>
+                                <input type="text" class="form-control" id="description" name="description" placeholder="Additional notes about this contingent">
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Create Contingent
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -162,4 +240,47 @@
         </div>
     </div>
 </div>
+
+<script>
+function viewContingent(contingentId) {
+    window.location.href = "{{ url_for('view_contingent', contingent_id=0) }}".replace('0', contingentId);
+}
+
+// Format contingent identifier as user types
+document.addEventListener('DOMContentLoaded', function() {
+    const contingentInput = document.getElementById('contingent_identifier');
+    if (contingentInput) {
+        contingentInput.addEventListener('input', function(e) {
+            let value = e.target.value.toUpperCase();
+            
+            // Remove any characters that aren't digits, letters, or hyphens
+            value = value.replace(/[^0-9A-Z-]/g, '');
+            
+            // Auto-format: if user types digits followed by letters, add hyphen
+            const digitMatch = value.match(/^([0-9]{3,4})([A-Z]{1,2})$/);
+            if (digitMatch) {
+                value = digitMatch[1] + '-' + digitMatch[2];
+            }
+            
+            // Limit length to 7 characters (####-AB)
+            if (value.length > 7) {
+                value = value.substring(0, 7);
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Validate on blur
+        contingentInput.addEventListener('blur', function(e) {
+            const value = e.target.value;
+            const pattern = /^[0-9]{3,4}-[A-Z]{1,2}$/;
+            if (value && !pattern.test(value)) {
+                e.target.setCustomValidity('Format must be ###-A or ####-AB (e.g., 714-A)');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Contingent {{ contingent.full_designation }} - Philmont Trek Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-users"></i> Contingent {{ contingent.full_designation }}</h2>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-calendar"></i> {{ contingent.year }} • 
+                    <i class="fas fa-plane-arrival"></i> Arrives {{ contingent.arrival_date|format_arrival_date }} • 
+                    <i class="fas fa-envelope"></i> Philmont Identifier
+                    {% if contingent.description %}
+                    <br>{{ contingent.description }}
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users"></i> Crews in Contingent ({{ crews_in_contingent|length }})
+            </div>
+            <div class="card-body">
+                {% if crews_in_contingent %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Crew Name</th>
+                                <th>Size</th>
+                                <th>Members</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for crew in crews_in_contingent %}
+                            <tr>
+                                <td>
+                                    <strong>{{ crew.crew_name }}</strong>
+                                </td>
+                                <td>{{ crew.crew_size }}</td>
+                                <td>
+                                    <span class="badge bg-{% if crew.member_count == crew.crew_size %}success{% elif crew.member_count %}warning{% else %}secondary{% endif %}">
+                                        {{ crew.member_count or 0 }}/{{ crew.crew_size }}
+                                    </span>
+                                </td>
+                                <td>{{ crew.created_at[:10] }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('admin', crew_id=crew.id) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Manage
+                                        </a>
+                                        <form method="POST" action="{{ url_for('remove_crew_from_contingent', contingent_id=contingent.id) }}" class="d-inline" 
+                                              onsubmit="return confirm('Remove {{ crew.crew_name }} from this contingent?')">
+                                            <input type="hidden" name="crew_id" value="{{ crew.id }}">
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="fas fa-times"></i> Remove
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+                    <p>No crews assigned to this contingent yet.</p>
+                    <p>Use the form on the right to add crews.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Add Existing Crew -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fas fa-plus"></i> Add Existing Crew
+            </div>
+            <div class="card-body">
+                {% if unassigned_crews %}
+                <form method="POST" action="{{ url_for('add_crew_to_contingent', contingent_id=contingent.id) }}">
+                    <div class="mb-3">
+                        <label for="crew_id" class="form-label">Select Crew</label>
+                        <select class="form-select" id="crew_id" name="crew_id" required>
+                            <option value="">Choose a crew...</option>
+                            {% for crew in unassigned_crews %}
+                            <option value="{{ crew.id }}">
+                                {{ crew.crew_name }} ({{ crew.member_count or 0 }}/{{ crew.crew_size }} members)
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Only unassigned crews are shown.</div>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add Existing Crew
+                    </button>
+                </form>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <p>All existing crews are assigned.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Create New Crew -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-plus-circle"></i> Create New Crew
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_crew_for_contingent', contingent_id=contingent.id) }}">
+                    <div class="mb-3">
+                        <label for="new_crew_name" class="form-label">Crew Name *</label>
+                        <input type="text" class="form-control" id="new_crew_name" name="crew_name" required placeholder="e.g., Troop 123 Crew A">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_crew_size" class="form-label">Expected Crew Size</label>
+                        <input type="number" class="form-control" id="new_crew_size" name="crew_size" value="9" min="6" max="12">
+                        <div class="form-text">Typical crew size is 9-12 members.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus-circle"></i> Create & Add Crew
+                    </button>
+                </form>
+                <div class="form-text mt-2">
+                    <small class="text-info">
+                        <i class="fas fa-info-circle"></i> The new crew will be automatically assigned to this contingent.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Contingent Summary
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-2">
+                            <h4 class="text-primary mb-1">{{ crews_in_contingent|length }}</h4>
+                            <small class="text-muted">Crews</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2">
+                            <h4 class="text-success mb-1">
+                                {% set total_members = crews_in_contingent|sum(attribute='member_count') or 0 %}
+                                {{ total_members }}
+                            </h4>
+                            <small class="text-muted">Members</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Year:</dt>
+                    <dd class="col-sm-8">{{ contingent.year }}</dd>
+                    
+                    <dt class="col-sm-4">Identifier:</dt>
+                    <dd class="col-sm-8"><code>{{ contingent.full_designation }}</code></dd>
+                    
+                    <dt class="col-sm-4">Arrival:</dt>
+                    <dd class="col-sm-8">{{ contingent.arrival_date|format_arrival_date }}</dd>
+                    
+                    {% if contingent.description %}
+                    <dt class="col-sm-4">Notes:</dt>
+                    <dd class="col-sm-8">{{ contingent.description }}</dd>
+                    {% endif %}
+                    
+                    <dt class="col-sm-4">Created:</dt>
+                    <dd class="col-sm-8">{{ contingent.created_at[:10] }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewContingent(contingentId) {
+    window.location.href = "{{ url_for('view_contingent', contingent_id=0) }}".replace('0', contingentId);
+}
+</script>
+{% endblock %}

@@ -11,6 +11,14 @@ from functools import wraps
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'philmont-trek-selection-2025'
 
+# Add custom Jinja2 filter for formatting arrival dates
+@app.template_filter('format_arrival_date')
+def format_arrival_date(date_str):
+    """Format MMDD to MM/DD for display"""
+    if date_str and len(date_str) == 4:
+        return f"{date_str[:2]}/{date_str[2:]}"
+    return date_str
+
 # Authentication configuration
 ADMIN_PASSWORD = 'philmont2025'  # In production, use environment variables
 
@@ -702,6 +710,16 @@ def index():
         if not crew_id and crews:
             crew_id = crews[0]['id']
             session['admin_crew_id'] = crew_id  # Remember admin's choice
+            
+        # Get contingents with crew counts for admin
+        contingents = conn.execute('''
+            SELECT c.*, 
+                   COUNT(cr.id) as crew_count
+            FROM contingents c
+            LEFT JOIN crews cr ON c.id = cr.contingent_id
+            GROUP BY c.id, c.year, c.designation, c.expedition_letter, c.arrival_date, c.full_designation, c.description
+            ORDER BY c.year DESC, c.designation, c.expedition_letter
+        ''').fetchall()
     else:
         # Regular users only see their assigned crew
         user = get_current_user()
@@ -711,12 +729,14 @@ def index():
         else:
             flash('No crew assigned to your account. Contact administrator.', 'error')
             return redirect(url_for('logout'))
+        contingents = []
     
     conn.close()
     
     return render_template('index.html', 
                          crews=crews,
-                         selected_crew_id=crew_id)
+                         selected_crew_id=crew_id,
+                         contingents=contingents)
 
 @app.route('/preferences')
 @login_required
@@ -1369,15 +1389,31 @@ def admin():
     
     conn = get_db_connection()
     
-    # Get all crews
-    crews = conn.execute('SELECT * FROM crews ORDER BY crew_name').fetchall()
+    # Get all crews with contingent information
+    crews = conn.execute('''
+        SELECT c.*, cont.full_designation as contingent_name
+        FROM crews c
+        LEFT JOIN contingents cont ON c.contingent_id = cont.id
+        ORDER BY c.crew_name
+    ''').fetchall()
+    
+    # Get all contingents for dropdown
+    contingents = conn.execute('''
+        SELECT * FROM contingents 
+        ORDER BY year DESC, designation, expedition_letter
+    ''').fetchall()
     
     selected_crew = None
     crew_members = []
     
     if selected_crew_id:
-        # Get selected crew info
-        selected_crew = conn.execute('SELECT * FROM crews WHERE id = ?', (selected_crew_id,)).fetchone()
+        # Get selected crew info with contingent
+        selected_crew = conn.execute('''
+            SELECT c.*, cont.full_designation as contingent_name, cont.id as contingent_id
+            FROM crews c
+            LEFT JOIN contingents cont ON c.contingent_id = cont.id
+            WHERE c.id = ?
+        ''', (selected_crew_id,)).fetchone()
         
         if selected_crew:
             # Get crew members with survey completion status
@@ -1401,13 +1437,16 @@ def admin():
                          crews=crews, 
                          selected_crew=selected_crew,
                          selected_crew_id=selected_crew_id,
-                         crew_members=crew_members)
+                         crew_members=crew_members,
+                         contingents=contingents)
 
 @app.route('/admin/add_crew', methods=['POST'])
+@admin_required
 def add_crew():
     """Add a new crew"""
     crew_name = request.form.get('crew_name', '').strip()
     crew_size = request.form.get('crew_size', 9, type=int)
+    contingent_id = request.form.get('contingent_id', type=int)
     
     if not crew_name:
         flash('Crew name is required.', 'error')
@@ -1417,9 +1456,9 @@ def add_crew():
     
     try:
         cursor = conn.execute('''
-            INSERT INTO crews (crew_name, crew_size) 
-            VALUES (?, ?)
-        ''', (crew_name, crew_size))
+            INSERT INTO crews (crew_name, crew_size, contingent_id) 
+            VALUES (?, ?, ?)
+        ''', (crew_name, crew_size, contingent_id if contingent_id else None))
         
         conn.commit()
         flash(f'Crew "{crew_name}" created successfully!', 'success')
@@ -1431,6 +1470,39 @@ def add_crew():
         return redirect(url_for('admin'))
     finally:
         conn.close()
+
+@app.route('/admin/edit_crew', methods=['POST'])
+@admin_required
+def edit_crew():
+    """Edit crew details including contingent assignment"""
+    crew_id = request.form.get('crew_id', type=int)
+    crew_name = request.form.get('crew_name', '').strip()
+    crew_size = request.form.get('crew_size', type=int)
+    contingent_id = request.form.get('contingent_id', type=int)
+    
+    if not crew_id or not crew_name:
+        flash('Crew ID and name are required.', 'error')
+        return redirect(url_for('admin'))
+    
+    conn = get_db_connection()
+    
+    try:
+        conn.execute('''
+            UPDATE crews 
+            SET crew_name = ?, crew_size = ?, contingent_id = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        ''', (crew_name, crew_size, contingent_id if contingent_id else None, crew_id))
+        
+        conn.commit()
+        flash(f'Crew "{crew_name}" updated successfully!', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error updating crew: {str(e)}', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('admin', crew_id=crew_id))
 
 @app.route('/admin/add_member', methods=['POST'])
 def add_member():
@@ -1676,6 +1748,245 @@ def toggle_user_active(user_id):
         conn.close()
     
     return redirect(url_for('admin_users'))
+
+# ===================================
+# Contingent Management Routes (Admin Only)
+# ===================================
+
+@app.route('/contingents/create', methods=['POST'])
+@admin_required
+def create_contingent():
+    """Create a new contingent"""
+    year = request.form.get('year', type=int)
+    contingent_identifier = request.form.get('contingent_identifier', '').strip().upper()
+    description = request.form.get('description', '').strip()
+    
+    # Validation
+    if not year or not contingent_identifier:
+        flash('Year and contingent identifier are required', 'error')
+        return redirect(url_for('index'))
+    
+    # Validate contingent identifier format (###-A or ####-AB)
+    import re
+    if not re.match(r'^[0-9]{3,4}-[A-Z]{1,2}$', contingent_identifier):
+        flash('Contingent identifier must be in format ###-A or ####-AB (e.g., 714-A, 0714-AB)', 'error')
+        return redirect(url_for('index'))
+    
+    # Parse the contingent identifier
+    parts = contingent_identifier.split('-')
+    designation = parts[0]
+    expedition_letter = parts[1]
+    
+    # Generate arrival date from designation (assume it's MMDD format)
+    if len(designation) == 3:
+        # Convert ###  to 0### format for consistency
+        arrival_date = '0' + designation
+    else:
+        arrival_date = designation
+    
+    conn = get_db_connection()
+    
+    try:
+        # Check if contingent already exists
+        existing = conn.execute('''
+            SELECT id FROM contingents 
+            WHERE year = ? AND designation = ? AND expedition_letter = ?
+        ''', (year, designation, expedition_letter)).fetchone()
+        
+        if existing:
+            flash(f'Contingent {contingent_identifier} for {year} already exists', 'error')
+            return redirect(url_for('index'))
+        
+        # Insert new contingent
+        cursor = conn.execute('''
+            INSERT INTO contingents (year, designation, arrival_date, expedition_letter, description)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (year, designation, arrival_date, expedition_letter, description or None))
+        
+        conn.commit()
+        contingent_id = cursor.lastrowid
+        
+        flash(f'Contingent {contingent_identifier} for {year} created successfully!', 'success')
+        
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        flash(f'Error creating contingent: This contingent may already exist', 'error')
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error creating contingent: {str(e)}', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('index'))
+
+@app.route('/contingents/<int:contingent_id>')
+@admin_required
+def view_contingent(contingent_id):
+    """View contingent details and manage crews"""
+    conn = get_db_connection()
+    
+    # Get contingent details
+    contingent = conn.execute('''
+        SELECT * FROM contingents WHERE id = ?
+    ''', (contingent_id,)).fetchone()
+    
+    if not contingent:
+        flash('Contingent not found', 'error')
+        return redirect(url_for('index'))
+    
+    # Get crews in this contingent
+    crews_in_contingent = conn.execute('''
+        SELECT c.*, cm_count.member_count
+        FROM crews c
+        LEFT JOIN (
+            SELECT crew_id, COUNT(*) as member_count 
+            FROM crew_members 
+            GROUP BY crew_id
+        ) cm_count ON c.id = cm_count.crew_id
+        WHERE c.contingent_id = ?
+        ORDER BY c.crew_name
+    ''', (contingent_id,)).fetchall()
+    
+    # Get crews not in any contingent
+    unassigned_crews = conn.execute('''
+        SELECT c.*, cm_count.member_count
+        FROM crews c
+        LEFT JOIN (
+            SELECT crew_id, COUNT(*) as member_count 
+            FROM crew_members 
+            GROUP BY crew_id
+        ) cm_count ON c.id = cm_count.crew_id
+        WHERE c.contingent_id IS NULL
+        ORDER BY c.crew_name
+    ''', ()).fetchall()
+    
+    conn.close()
+    
+    return render_template('contingent_detail.html',
+                         contingent=contingent,
+                         crews_in_contingent=crews_in_contingent,
+                         unassigned_crews=unassigned_crews)
+
+@app.route('/contingents/<int:contingent_id>/add_crew', methods=['POST'])
+@admin_required
+def add_crew_to_contingent(contingent_id):
+    """Add a crew to a contingent"""
+    crew_id = request.form.get('crew_id', type=int)
+    
+    if not crew_id:
+        flash('Please select a crew', 'error')
+        return redirect(url_for('view_contingent', contingent_id=contingent_id))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Update crew to belong to this contingent
+        cursor = conn.execute('''
+            UPDATE crews 
+            SET contingent_id = ?
+            WHERE id = ?
+        ''', (contingent_id, crew_id))
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            flash('Crew added to contingent successfully!', 'success')
+        else:
+            flash('Crew not found', 'error')
+            
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error adding crew to contingent: {str(e)}', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('view_contingent', contingent_id=contingent_id))
+
+@app.route('/contingents/<int:contingent_id>/remove_crew', methods=['POST'])
+@admin_required
+def remove_crew_from_contingent(contingent_id):
+    """Remove a crew from a contingent"""
+    crew_id = request.form.get('crew_id', type=int)
+    
+    if not crew_id:
+        flash('Please select a crew', 'error')
+        return redirect(url_for('view_contingent', contingent_id=contingent_id))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Remove crew from contingent
+        cursor = conn.execute('''
+            UPDATE crews 
+            SET contingent_id = NULL
+            WHERE id = ? AND contingent_id = ?
+        ''', (crew_id, contingent_id))
+        
+        if cursor.rowcount > 0:
+            conn.commit()
+            flash('Crew removed from contingent successfully!', 'success')
+        else:
+            flash('Crew not found in this contingent', 'error')
+            
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error removing crew from contingent: {str(e)}', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('view_contingent', contingent_id=contingent_id))
+
+@app.route('/contingents/<int:contingent_id>/create_crew', methods=['POST'])
+@admin_required
+def create_crew_for_contingent(contingent_id):
+    """Create a new crew and assign it to a contingent"""
+    crew_name = request.form.get('crew_name', '').strip()
+    crew_size = request.form.get('crew_size', 9, type=int)
+    
+    # Validation
+    if not crew_name:
+        flash('Crew name is required.', 'error')
+        return redirect(url_for('view_contingent', contingent_id=contingent_id))
+    
+    if crew_size < 6 or crew_size > 12:
+        flash('Crew size must be between 6 and 12 members.', 'error')
+        return redirect(url_for('view_contingent', contingent_id=contingent_id))
+    
+    conn = get_db_connection()
+    
+    try:
+        # Verify contingent exists
+        contingent = conn.execute('SELECT * FROM contingents WHERE id = ?', (contingent_id,)).fetchone()
+        if not contingent:
+            flash('Contingent not found.', 'error')
+            return redirect(url_for('index'))
+        
+        # Check if crew name already exists
+        existing_crew = conn.execute('SELECT id FROM crews WHERE crew_name = ?', (crew_name,)).fetchone()
+        if existing_crew:
+            flash(f'A crew named "{crew_name}" already exists.', 'error')
+            return redirect(url_for('view_contingent', contingent_id=contingent_id))
+        
+        # Create the new crew with contingent assignment
+        cursor = conn.execute('''
+            INSERT INTO crews (crew_name, crew_size, contingent_id) 
+            VALUES (?, ?, ?)
+        ''', (crew_name, crew_size, contingent_id))
+        
+        new_crew_id = cursor.lastrowid
+        conn.commit()
+        
+        flash(f'Crew "{crew_name}" created and assigned to contingent {contingent["full_designation"]} successfully!', 'success')
+        
+        # Redirect to admin with the new crew selected for member management
+        return redirect(url_for('admin', crew_id=new_crew_id))
+        
+    except Exception as e:
+        conn.rollback()
+        flash(f'Error creating crew: {str(e)}', 'error')
+    finally:
+        conn.close()
+    
+    return redirect(url_for('view_contingent', contingent_id=contingent_id))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)
