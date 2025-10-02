@@ -40,6 +40,7 @@ def inject_admin_status():
         "is_admin": is_admin(),
         "current_user": get_current_user(),
         "user_crew_id": get_user_crew_id(),
+        "available_trek_types": get_available_trek_types(),
     }
 
 
@@ -222,13 +223,39 @@ def get_existing_scores(crew_id=1):
 
 
 def get_crew_trek_type(crew_id):
-    """Get the trek type preference for a crew"""
+    """Get the trek type preference for a crew, falling back to available types"""
     conn = get_db_connection()
     prefs = conn.execute(
         "SELECT trek_type FROM crew_preferences WHERE crew_id = ?", (crew_id,)
     ).fetchone()
     conn.close()
-    return prefs["trek_type"] if prefs and prefs["trek_type"] else "12-day"
+
+    preferred_type = prefs["trek_type"] if prefs and prefs["trek_type"] else "12-day"
+    available_types = get_available_trek_types()
+
+    # If the preferred type has no data, fall back to the first available type
+    if preferred_type in available_types:
+        return preferred_type
+    elif available_types:
+        return available_types[0]  # Return first available type
+    else:
+        return "12-day"  # Ultimate fallback
+
+
+def get_available_trek_types():
+    """Get all trek types that have itinerary data available"""
+    conn = get_db_connection()
+    trek_types = conn.execute(
+        "SELECT DISTINCT trek_type FROM itineraries ORDER BY trek_type"
+    ).fetchall()
+    conn.close()
+
+    return [row["trek_type"] for row in trek_types]
+
+
+def get_all_trek_types():
+    """Get all possible trek types (including those without data)"""
+    return ["12-day", "9-day", "7-day", "Cavalcade"]
 
 
 class PhilmontScorer:
@@ -418,6 +445,11 @@ class PhilmontScorer:
         ).fetchall()
 
         results = []
+
+        # Handle case where no itineraries exist for this trek type
+        if not itineraries:
+            conn.close()
+            return results
 
         for itin in itineraries:
             score_components = {
