@@ -61,7 +61,9 @@
                             <strong>{{ result.itinerary.itinerary_code }}</strong>
                             <span class="badge difficulty-{{ result.itinerary.difficulty }}">{{ result.itinerary.difficulty }}</span>
                             <br>
-                            <small class="text-muted">Score: {{ "%.1f"|format(result.total_score) }}</small>
+                            <small class="text-muted">Score: 
+                                <span title="Program: {{ '%.1f'|format(result.components.program_score) }}&#10;Difficulty: {{ '%.1f'|format(result.components.difficulty_score) }}&#10;Area: {{ '%.1f'|format(result.components.area_score) }}&#10;Altitude: {{ '%.1f'|format(result.components.altitude_score) }}&#10;Distance: {{ '%.1f'|format(result.components.distance_score) }}&#10;Hike: {{ '%.1f'|format(result.components.hike_score) }}&#10;Camp: {{ '%.1f'|format(result.components.camp_score) }}&#10;Peak: {{ '%.1f'|format(result.components.peak_score) }}">{{ "%.1f"|format(result.total_score) }}</span>
+                            </small>
                         </div>
                     </div>
                     {% endfor %}
@@ -127,7 +129,9 @@
                                     </span>
                                 </td>
                                 <td>{{ result.itinerary.distance or 'N/A' }} mi</td>
-                                <td><strong>{{ "%.1f"|format(result.total_score) }}</strong></td>
+                                <td>
+                                    <strong title="Program: {{ '%.1f'|format(result.components.program_score) }}&#10;Difficulty: {{ '%.1f'|format(result.components.difficulty_score) }}&#10;Area: {{ '%.1f'|format(result.components.area_score) }}&#10;Altitude: {{ '%.1f'|format(result.components.altitude_score) }}&#10;Distance: {{ '%.1f'|format(result.components.distance_score) }}&#10;Hike: {{ '%.1f'|format(result.components.hike_score) }}&#10;Camp: {{ '%.1f'|format(result.components.camp_score) }}&#10;Peak: {{ '%.1f'|format(result.components.peak_score) }}">{{ "%.1f"|format(result.total_score) }}</strong>
+                                </td>
                                 <td>{{ "%.1f"|format(result.components.program_score) }}</td>
                                 <td>{{ "%.1f"|format(result.components.difficulty_score) }}</td>
                                 <td>{{ "%.1f"|format(result.components.area_score) }}</td>

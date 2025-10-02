@@ -439,10 +439,10 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="prefer_frequent_resupply" name="prefer_frequent_resupply"
-                                       {% if preferences and preferences.prefer_frequent_resupply %}checked{% endif %}>
-                                <label class="form-check-label" for="prefer_frequent_resupply">
-                                    <i class="fas fa-truck text-info"></i> <strong>Prefer Lower Initial Food Load</strong>
+                                <input class="form-check-input" type="checkbox" id="prefer_low_starting_food" name="prefer_low_starting_food"
+                                       {% if preferences and preferences.prefer_low_starting_food %}checked{% endif %}>
+                                <label class="form-check-label" for="prefer_low_starting_food">
+                                    <i class="fas fa-truck text-info"></i> <strong>Prefer Low Starting Food</strong>
                                 </label>
                                 <div class="form-text">
                                     Prefer less food carried out from base (lighter packs to start with).
@@ -451,13 +451,13 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="prefer_self_sufficient" name="prefer_self_sufficient"
-                                       {% if preferences and preferences.prefer_self_sufficient %}checked{% endif %}>
-                                <label class="form-check-label" for="prefer_self_sufficient">
-                                    <i class="fas fa-backpack text-success"></i> <strong>Less Frequent Food Resupply</strong>
+                                <input class="form-check-input" type="checkbox" id="prefer_shorter_resupply" name="prefer_shorter_resupply"
+                                       {% if preferences and preferences.prefer_shorter_resupply %}checked{% endif %}>
+                                <label class="form-check-label" for="prefer_shorter_resupply">
+                                    <i class="fas fa-backpack text-success"></i> <strong>Prefer Shorter Resupply</strong>
                                 </label>
                                 <div class="form-text">
-                                    Prefer longer periods between resupply (fewer stops, but larger food resupplies).
+                                    Prefer shorter periods between resupply (more stops, but smaller food resupplies).
                                 </div>
                             </div>
                         </div>
