@@ -412,14 +412,10 @@ class PhilmontScorer:
         conn = get_db_connection()
 
         # Get all itineraries based on trek type
-        if self.trek_type == "9-day":
-            itineraries = conn.execute(
-                "SELECT * FROM itineraries_9day ORDER BY itinerary_code"
-            ).fetchall()
-        else:
-            itineraries = conn.execute(
-                "SELECT * FROM itineraries ORDER BY itinerary_code"
-            ).fetchall()
+        itineraries = conn.execute(
+            "SELECT * FROM itineraries WHERE trek_type = ? ORDER BY itinerary_code",
+            (self.trek_type,),
+        ).fetchall()
 
         results = []
 
@@ -470,24 +466,14 @@ class PhilmontScorer:
     def _calculate_program_score(self, itinerary_id, program_scores, conn):
         """Calculate program score for an itinerary"""
         # Get programs available for this itinerary based on trek type
-        if self.trek_type == "9-day":
-            available_programs = conn.execute(
-                """
-                SELECT ip.program_id 
-                FROM itinerary_programs_9day ip 
-                WHERE ip.itinerary_id = ? AND ip.is_available = 1
-            """,
-                (itinerary_id,),
-            ).fetchall()
-        else:
-            available_programs = conn.execute(
-                """
-                SELECT ip.program_id 
-                FROM itinerary_programs ip 
-                WHERE ip.itinerary_id = ? AND ip.is_available = 1
-            """,
-                (itinerary_id,),
-            ).fetchall()
+        available_programs = conn.execute(
+            """
+            SELECT ip.program_id 
+            FROM itinerary_programs ip 
+            WHERE ip.itinerary_id = ? AND ip.is_available = 1 AND ip.trek_type = ?
+        """,
+            (itinerary_id, self.trek_type),
+        ).fetchall()
 
         # Sum scores for available programs
         total_score = 0
@@ -1445,15 +1431,10 @@ def itinerary_detail(code):
     """Detailed view of a specific itinerary"""
     conn = get_db_connection()
 
-    # Determine which table to query based on itinerary code
-    if code.startswith("9-"):
-        itinerary = conn.execute(
-            "SELECT * FROM itineraries_9day WHERE itinerary_code = ?", (code,)
-        ).fetchone()
-    else:
-        itinerary = conn.execute(
-            "SELECT * FROM itineraries WHERE itinerary_code = ?", (code,)
-        ).fetchone()
+    # Query the unified itineraries table
+    itinerary = conn.execute(
+        "SELECT * FROM itineraries WHERE itinerary_code = ?", (code,)
+    ).fetchone()
 
     if not itinerary:
         flash(f"Itinerary {code} not found", "error")
