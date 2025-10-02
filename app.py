@@ -462,7 +462,9 @@ class PhilmontScorer:
                 "distance_score": self._calculate_distance_score(itin, crew_prefs),
                 "hike_score": self._calculate_hike_score(itin, crew_prefs),
                 "camp_score": self._calculate_camp_score(itin, crew_prefs, conn),
-                "peak_score": self._calculate_peak_score(itin, crew_prefs),
+                "peak_score": self._calculate_peak_score(
+                    itin, crew_prefs, conn, method
+                ),
             }
 
             total_score = sum(score_components.values())
@@ -693,14 +695,44 @@ class PhilmontScorer:
         # Use dry_camps field from itineraries table
         dry_camp_count = itinerary["dry_camps"] or 0
         max_dry_camps = crew_prefs.get("max_dry_camps")
-
+        dry_camp_scores = {0: 300, 1: 250, 2: 225, 3: 200, 4: 150, 5: 100, 6: 50, 7: 20}
         if max_dry_camps is not None:
             if dry_camp_count <= max_dry_camps:
                 # Award points for staying within limit, more points for fewer dry camps
-                score += (max_dry_camps - dry_camp_count + 1) * 200
+                score += dry_camp_scores.get(
+                    min(dry_camp_count, 7), 20
+                )  # Use 20 for 7+ camps
             else:
                 # Penalize for exceeding limit
                 score -= (dry_camp_count - max_dry_camps) * 500
+        else:
+            # Use dry camp scoring table when no maximum is set
+            score += dry_camp_scores.get(
+                min(dry_camp_count, 7), 20
+            )  # Use 20 for 7+ camps
+
+        # Use trail_camps field from itineraries table for trail camp scoring
+        trail_camp_count = itinerary["trail_camps"] or 0
+        trail_camp_scores = {
+            0: 250,
+            1: 200,
+            2: 175,
+            3: 150,
+            4: 125,
+            5: 100,
+            6: 75,
+            7: 50,
+            8: 25,
+        }
+        score += trail_camp_scores.get(
+            min(trail_camp_count, 8), 25
+        )  # Use 25 for 8+ camps
+
+        # Total camps scoring (based on total number of camps in itinerary)
+        total_camps = dry_camp_count + trail_camp_count
+        total_camp_scores = {3: 60, 4: 70, 5: 80, 6: 90, 7: 100, 8: 75, 9: 60, 10: 50}
+        if total_camps in total_camp_scores:
+            score += total_camp_scores[total_camps]
 
         # Check for showers if required
         if crew_prefs.get("showers_required", False):
@@ -743,55 +775,101 @@ class PhilmontScorer:
         days_food_from_base = itinerary["days_food_from_base"] or 0
         max_days_food = itinerary["max_days_food"] or 0
 
-        if crew_prefs.get("prefer_frequent_resupply", False):
+        if crew_prefs.get("prefer_low_starting_food", False):
             # Score based on days_food_from_base: 20 points for 1 day, 100 points for 9 days
             # Formula: 20 + (days-1)*10, but inverted since we want fewer days to score higher
             if days_food_from_base > 0:
                 # Invert the scoring: fewer days = higher score
                 base_score = 20 + (days_food_from_base - 1) * 10
-                inverted_score = 120 - base_score  # Max possible (100) + buffer (20)
-                score += inverted_score
+                score += base_score
 
+        if crew_prefs.get("prefer_shorter_resupply", False):
             # Score based on max_days_food: 100 points for 1 day, 50 points for 6 days
             # Already decreasing, so use directly
             if max_days_food > 0:
                 food_score = 100 + (max_days_food - 1) * (-10)
                 score += max(food_score, 0)  # Don't go negative
 
-        if crew_prefs.get("prefer_self_sufficient", False):
-            # Score based on days_food_from_base: more days = higher score
-            if days_food_from_base > 0:
-                base_score = 20 + (days_food_from_base - 1) * 10
-                score += base_score
-
-            # Score based on max_days_food: inverted since we want more days
-            if max_days_food > 0:
-                # Invert the scoring: more days = higher score
-                base_score = 100 + (max_days_food - 1) * (-10)
-                inverted_score = 150 - base_score  # Invert the scale
-                score += max(inverted_score, 0)  # Don't go negative
-
         return score
 
-    def _calculate_peak_score(self, itinerary, crew_prefs):
-        """Calculate peak climbing score"""
+    def _calculate_peak_score(self, itinerary, crew_prefs, conn, method="Total"):
+        """Calculate peak climbing score based on Landmarks program scores
+
+        This matches the VBA implementation which uses program scores from
+        Landmarks columns rather than a fixed 500-point bonus system.
+        Uses the same calculation method (Total/Average/Median/Mode) as other scoring.
+        Applies additional multiplication factors based on peak difficulty/importance.
+        """
         score = 0
 
-        # Peak scoring: 500 points for each preferred peak that the itinerary includes
+        # Map peak preferences to their corresponding Landmarks programs
+        peak_to_landmark = {
+            "climb_baldy": "Landmarks: Baldy Mountain",
+            "climb_phillips": "Landmarks: Mount Phillips",
+            "climb_tooth": "Landmarks: Tooth of Time",
+            "climb_inspiration_point": "Landmarks: Inspiration Point",
+            "climb_trail_peak": "Landmarks: Trail Peak",
+            "climb_others": "Landmarks: Mountaineering",
+        }
+
+        # Peak multiplication factors based on difficulty/importance
+        peak_multipliers = {
+            "climb_baldy": 2.0,  # Baldy Mountain - highest peak at Philmont
+            "climb_phillips": 1.5,  # Mount Phillips - second highest peak
+            "climb_tooth": 1.5,  # Tooth of Time - iconic landmark
+            "climb_inspiration_point": 1.0,  # Inspiration Point - standard difficulty
+            "climb_trail_peak": 1.5,  # Trail Peak - moderate difficulty
+            "climb_others": 1.2,  # Mountaineering - various peaks
+        }
+
+        # Map peak preferences to itinerary columns
         peak_preferences = {
             "climb_baldy": itinerary["baldy_mountain"] or False,
             "climb_phillips": itinerary["mount_phillips"] or False,
             "climb_tooth": itinerary["tooth_of_time"] or False,
             "climb_inspiration_point": itinerary["inspiration_point"] or False,
             "climb_trail_peak": itinerary["trail_peak"] or False,
-            "climb_others": itinerary["mountaineering"]
-            or False,  # Use mountaineering column
+            "climb_others": itinerary["mountaineering"] or False,
         }
 
-        for pref_key, itin_has_peak in peak_preferences.items():
-            if crew_prefs.get(pref_key, False) and itin_has_peak:
-                score += 500
+        # Get program scores for this crew using the same method as other calculations
+        program_scores = {}
+        for pref_key, landmark_name in peak_to_landmark.items():
+            # Get program ID for this landmark
+            program_result = conn.execute(
+                "SELECT id FROM programs WHERE name = ?", (landmark_name,)
+            ).fetchone()
 
+            if program_result:
+                program_id = program_result["id"]
+                # Get all scores for this program for this crew
+                score_results = conn.execute(
+                    """
+                    SELECT score 
+                    FROM program_scores 
+                    WHERE program_id = ? AND crew_id = ?
+                    """,
+                    (program_id, self.crew_id),
+                ).fetchall()
+
+                if score_results:
+                    scores = [row["score"] for row in score_results]
+                    # Use the same aggregation method as other program scoring
+                    program_scores[pref_key] = self._calculate_aggregate(scores, method)
+
+        # Add scores for peaks that the itinerary includes
+        for pref_key, itin_has_peak in peak_preferences.items():
+            if itin_has_peak and pref_key in program_scores:
+                base_score = program_scores[pref_key]
+                program_factor = self.get_score_factor("programFactor")
+
+                if crew_prefs.get(pref_key, False):
+                    # Crew wants this peak - apply peak-specific multiplication factor
+                    multiplier = peak_multipliers.get(pref_key, 1.0)
+                    score += base_score * multiplier * program_factor
+                else:
+                    # Crew doesn't want this peak but it's available - give base benefit only
+                    score += base_score * program_factor
         return score
 
 
@@ -1109,8 +1187,8 @@ def save_preferences():
                 max_dry_camps = ?,
                 showers_required = ?,
                 layovers_required = ?,
-                prefer_frequent_resupply = ?,
-                prefer_self_sufficient = ?,
+                prefer_low_starting_food = ?,
+                prefer_shorter_resupply = ?,
                 trek_type = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE crew_id = ?
@@ -1143,8 +1221,8 @@ def save_preferences():
                 safe_int(request.form.get("max_dry_camps")),
                 "showers_required" in request.form,
                 "layovers_required" in request.form,
-                "prefer_frequent_resupply" in request.form,
-                "prefer_self_sufficient" in request.form,
+                "prefer_low_starting_food" in request.form,
+                "prefer_shorter_resupply" in request.form,
                 request.form.get("trek_type", "12-day"),
                 crew_id,
             ),
@@ -1157,7 +1235,7 @@ def save_preferences():
             (crew_id, area_important, area_rank_south, area_rank_central, area_rank_north, area_rank_valle_vidal,
              max_altitude_important, total_elevation_gain_important, altitude_change_important, daily_altitude_change_threshold, difficulty_challenging, difficulty_rugged, 
              difficulty_strenuous, difficulty_super_strenuous, climb_baldy, climb_phillips, climb_tooth, 
-             climb_inspiration_point, climb_trail_peak, climb_others, hike_in_preference, hike_out_preference, programs_important, adult_program_weight_enabled, adult_program_weight_percent, max_dry_camps, showers_required, layovers_required, prefer_frequent_resupply, prefer_self_sufficient)
+             climb_inspiration_point, climb_trail_peak, climb_others, hike_in_preference, hike_out_preference, programs_important, adult_program_weight_enabled, adult_program_weight_percent, max_dry_camps, showers_required, layovers_required, prefer_low_starting_food, prefer_shorter_resupply)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
@@ -1189,8 +1267,8 @@ def save_preferences():
                 safe_int(request.form.get("max_dry_camps")),
                 "showers_required" in request.form,
                 "layovers_required" in request.form,
-                "prefer_frequent_resupply" in request.form,
-                "prefer_self_sufficient" in request.form,
+                "prefer_low_starting_food" in request.form,
+                "prefer_shorter_resupply" in request.form,
                 request.form.get("trek_type", "12-day"),
             ),
         )
