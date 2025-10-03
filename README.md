@@ -1,122 +1,86 @@
 # Philmont Trek Selection System
 
-A Python web application that replicates the functionality of the original Excel spreadsheet for selecting Philmont Scout Ranch trek itineraries. This system helps Scout crews evaluate and rank 12-day trek options based on their preferences and activity interests.
+A Python web application that helps Scout crews evaluate and rank Philmont Scout Ranch trek itineraries based on their preferences and activity interests. This system replicates the functionality of the original Excel-based selection tool in an easy-to-use web interface.
+
+## 🚀 Quick Start
+
+**New to this app?** → Read the **[Getting Started Guide](GETTING_STARTED.md)**
+
+**Need quick commands?** → Check the **[Quick Reference](QUICK_REFERENCE.md)**
+
+### Fastest Setup
+```bash
+git clone https://github.com/bcox-ctv/phil_select.git
+cd phil_select
+python -m venv phil_select
+source phil_select/bin/activate  # On macOS/Linux
+pip install -r requirements.txt
+python app.py
+```
+Then open: http://127.0.0.1:5002
 
 ## Features
 
-- **Complete Database Schema**: SQLite database with all trek data from the original Excel file
-- **Crew Preferences**: Configure regional preferences, difficulty levels, altitude factors, and peak climbing interests
-- **Program Scoring**: Rate 56+ activity programs for each crew member
-- **Advanced Scoring**: Multiple calculation methods (Total, Average, Median, Mode)
-- **Results Dashboard**: Ranked itinerary list with detailed scoring breakdown
-- **Detailed Views**: Complete itinerary information with daily camp schedules
-- **Export Functionality**: Print and CSV export capabilities
+- **Complete Trek Database**: All 36 Philmont itineraries with detailed information
+- **Smart Scoring System**: Multi-factor algorithm considering preferences, programs, difficulty, and logistics
+- **Flexible Preferences**: Configure area preferences, difficulty levels, altitude factors, and peak climbing goals
+- **Program Rating**: Score 56+ activity programs for each crew member (0-20 scale)
+- **Multiple Calculation Methods**: Total, Average, Median, and Mode scoring
+- **Detailed Results**: Ranked itinerary list with complete scoring breakdown
+- **Trek Details**: Day-by-day schedules, camps, elevation profiles, and available programs
 
 ## Database Contents
 
-- **36 Trek Itineraries** (24 twelve-day treks + 12 nine-day treks)
-- **56 Activity Programs** (climbing, historical, range sports, STEM, etc.)
+- **36 Trek Itineraries** (12-day and 9-day options)
+- **56+ Activity Programs** (climbing, historical, STEM, nature, crafts, etc.)
 - **169 Backcountry Camps** with elevation and facility data
-- **701 Program Assignments** across all itineraries
+- **700+ Program Assignments** linking itineraries to available activities
 
-## Installation
+## How It Works
 
-1. **Clone or extract the project files**
-   ```bash
-   cd /home/brian/git/philmont_selection
-   ```
+1. **Set Preferences**: Configure your crew's difficulty acceptance, area preferences, altitude considerations, and peak climbing goals
+2. **Score Programs**: Rate each activity program (0-20) based on your crew's interests
+3. **View Results**: Get ranked itinerary recommendations with detailed scoring breakdown
+4. **Explore Details**: Click any itinerary to see day-by-day schedules and available programs
 
-2. **Create a Python virtual environment** (already done)
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Linux/Mac
-   ```
+## Understanding Scores
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+The application uses a sophisticated scoring algorithm with multiple weighted components:
 
-4. **Import the data** (already completed)
-   ```bash
-   python import_data.py
-   ```
+- **Program Score**: Based on your activity ratings × 1.5 multiplier (typically 200-800+ points)
+- **Camp Score**: Optimized scoring for camp types and counts (100-600 points)
+- **Difficulty Score**: Full points if trek matches accepted difficulty levels (0 or 2000+ points)
+- **Distance Score**: Preference-based distance optimization (4000-6000 points)
+- **Area Score**: Regional preference bonuses if enabled (0-1000 points)
+- **Peak Score**: Bonuses for desired peak climbs (0-500+ points)
 
-5. **Run the application**
-   ```bash
-   python app.py
-   ```
+Higher total scores indicate better matches for your crew's preferences.
 
-6. **Open your browser to** http://127.0.0.1:5000
+## Requirements
 
-## Quick Start Guide
-
-### 1. Set Crew Preferences
-- Navigate to **Preferences** in the main menu
-- Configure regional preferences (South, Central, North, Valle Vidal)
-- Set difficulty level acceptance (Challenging through Super Strenuous)
-- Choose altitude considerations and peak climbing interests
-
-### 2. Score Programs
-- Go to **Program Scores** to rate activities
-- Score each program 0-20 points for each crew member
-- Higher scores = greater interest in that activity
-- Use the bulk action tools for efficiency
-
-### 3. View Results
-- Check **Results** to see your ranked itinerary list
-- Try different calculation methods (Total vs Average vs Median vs Mode)
-- Click on any itinerary code to see detailed information
-- Export results to CSV or print for planning
-
-## Understanding the Scoring System
-
-The application uses a complex scoring algorithm that considers multiple factors:
-
-### Score Components
-- **Program Score**: Based on individual activity ratings × program factor (1.5x)
-- **Difficulty Score**: Matches accepted difficulty levels (100 points if accepted)
-- **Area Score**: Regional preference ranking (if area is important)
-- **Altitude Score**: Maximum altitude and daily change considerations
-- **Distance Score**: Preference-based distance scoring
-
-### Calculation Methods
-- **Total**: Sum of all individual scores
-- **Average**: Mean score across all crew members
-- **Median**: Middle score when sorted
-- **Mode**: Most frequently occurring score
+- Python 3.8 or higher
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+- ~100MB disk space (including virtual environment)
 
 ## File Structure
 
 ```
-philmont_selection/
-├── app.py                 # Flask web application
-├── schema.sql            # Database schema creation
-├── import_data.py        # Excel data import script
-├── analyze_excel.py      # Excel analysis utility
-├── requirements.txt      # Python dependencies
-├── philmont_selection.db # SQLite database (created after import)
-├── treks.xlsm           # Original Excel file
-├── templates/           # HTML templates
-│   ├── base.html        # Base template
-│   ├── index.html       # Home page
-│   ├── preferences.html # Crew preferences form
-│   ├── scores.html      # Program scoring interface
-│   ├── results.html     # Results dashboard
-│   └── itinerary_detail.html # Detailed itinerary view
-└── README.md            # This file
+phil_select/
+├── app.py                    # Main Flask application (85KB)
+├── philmont_selection.db     # SQLite database with all trek data (2MB)
+├── requirements.txt          # Python dependencies
+├── templates/                # HTML templates
+├── phil_select/             # Python virtual environment
+├── GETTING_STARTED.md       # Detailed setup and usage guide
+└── QUICK_REFERENCE.md       # Command reference and tips
 ```
 
-## Database Schema
+## Technology Stack
 
-The SQLite database includes the following main tables:
-- `programs` - Activity programs with categories
-- `camps` - Backcountry camps with locations and facilities
-- `itineraries` - Trek itineraries with difficulty and statistics
-- `crews` - Crew information and members
-- `crew_preferences` - Preference settings
-- `program_scores` - Individual activity ratings
-- `crew_results` - Calculated results and rankings
+- **Backend**: Python Flask web framework
+- **Database**: SQLite with pre-loaded Philmont data
+- **Frontend**: Bootstrap 5 + HTML/CSS/JavaScript
+- **Data**: Comprehensive Philmont trek and program database
 
 ## Original Excel Features Replicated
 
@@ -130,34 +94,26 @@ The SQLite database includes the following main tables:
 ✅ **Regional Coverage**: South, Central, North, Valle Vidal classification  
 ✅ **Difficulty Levels**: Challenging, Rugged, Strenuous, Super Strenuous  
 
-## Technology Stack
+## Development
 
-- **Backend**: Python Flask web framework
-- **Database**: SQLite with SQLAlchemy ORM
-- **Frontend**: Bootstrap 5 + HTML/CSS/JavaScript
-- **Data Processing**: Pandas for Excel import
-- **Icons**: Font Awesome 6
+This application was created to replace the Excel-based system while maintaining all original functionality. The scoring algorithms have been carefully replicated to ensure consistent results with the original spreadsheet.
 
-## Development Notes
-
-This application was created to replace the Excel-based system while maintaining all original functionality. The scoring algorithms have been carefully replicated from the Excel macros to ensure consistent results.
-
-### Key Features from Original Excel:
-- Named ranges converted to database relationships
-- Complex formulas implemented as Python functions
+### Key Implementation Details:
+- Excel named ranges converted to database relationships
+- Complex formulas implemented as Python functions  
 - VBA macro logic recreated in Flask routes
 - User interface adapted for web with improved usability
 
-## Support
+## Support and Contributing
 
-For questions about the original Excel spreadsheet functionality, contact the original author. For issues with this web application, check the console output for error details.
+- **Issues**: Report bugs or feature requests via GitHub issues
+- **Questions**: Check the [Getting Started Guide](GETTING_STARTED.md) first
+- **Contributing**: Fork the repository and submit pull requests
 
-## Future Enhancements
+## License
 
-Potential improvements could include:
-- Multi-crew comparison functionality
-- Historical results tracking
-- Advanced filtering and search
-- Mobile-optimized interface
-- Real-time collaboration features
-- Integration with Philmont's official systems
+This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
+
+## Acknowledgments
+
+Created to help Scout crews make informed decisions about their Philmont adventure. This tool provides recommendations only - final trek selection is handled through Philmont Scout Ranch's official reservation system.
