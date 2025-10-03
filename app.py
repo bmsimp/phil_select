@@ -47,6 +47,32 @@ def format_arrival_date(date_str):
     return date_str
 
 
+# Add custom filter for difficulty CSS classes
+@app.template_filter("difficulty_class")
+def difficulty_class(difficulty):
+    """Convert difficulty name to valid CSS class"""
+    difficulty_map = {
+        "Challenging": "C",
+        "Rugged": "R",
+        "Strenuous": "S",
+        "Super Strenuous": "SS",
+    }
+    return difficulty_map.get(difficulty, difficulty.replace(" ", "-"))
+
+
+# Add custom filter for difficulty abbreviations
+@app.template_filter("difficulty_abbrev")
+def difficulty_abbrev(difficulty):
+    """Convert difficulty name to abbreviation for display"""
+    difficulty_map = {
+        "Challenging": "C",
+        "Rugged": "R",
+        "Strenuous": "S",
+        "Super Strenuous": "SS",
+    }
+    return difficulty_map.get(difficulty, difficulty)
+
+
 # Authentication configuration
 ADMIN_PASSWORD = "philmont2025"  # In production, use environment variables
 

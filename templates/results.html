@@ -59,7 +59,7 @@
                         </div>
                         <div>
                             <strong>{{ result.itinerary.itinerary_code }}</strong>
-                            <span class="badge difficulty-{{ result.itinerary.difficulty }}">{{ result.itinerary.difficulty }}</span>
+                            <span class="badge difficulty-{{ result.itinerary.difficulty|difficulty_class }}">{{ result.itinerary.difficulty|difficulty_abbrev }}</span>
                             <br>
                             <small class="text-muted">Score: 
                                 <span title="Program: {{ '%.1f'|format(result.components.program_score) }}&#10;Difficulty: {{ '%.1f'|format(result.components.difficulty_score) }}&#10;Area: {{ '%.1f'|format(result.components.area_score) }}&#10;Altitude: {{ '%.1f'|format(result.components.altitude_score) }}&#10;Distance: {{ '%.1f'|format(result.components.distance_score) }}&#10;Hike: {{ '%.1f'|format(result.components.hike_score) }}&#10;Camp: {{ '%.1f'|format(result.components.camp_score) }}&#10;Peak: {{ '%.1f'|format(result.components.peak_score) }}">{{ "%.1f"|format(result.total_score) }}</span>
@@ -124,8 +124,8 @@
                                     {% if result.itinerary.covers_valle_vidal %}<i class="fas fa-tree text-success" title="Valle Vidal"></i>{% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge difficulty-{{ result.itinerary.difficulty }}">
-                                        {{ result.itinerary.difficulty }}
+                                    <span class="badge difficulty-{{ result.itinerary.difficulty|difficulty_class }}">
+                                        {{ result.itinerary.difficulty|difficulty_abbrev }}
                                     </span>
                                 </td>
                                 <td>{{ result.itinerary.distance or 'N/A' }} mi</td>
@@ -282,10 +282,15 @@
             font-size: 0.8em;
         }
         
-        .badge {
+        .badge:not([class*="difficulty-"]) {
             border: 1px solid #000 !important;
             color: #000 !important;
             background: #fff !important;
+        }
+        
+        /* Keep difficulty badge colors in print but add borders for clarity */
+        .badge[class*="difficulty-"] {
+            border: 1px solid #000 !important;
         }
     }
 </style>
