@@ -82,7 +82,7 @@ jobs:
         Start-Process -FilePath ".\${{ matrix.executable_name }}" -PassThru | ForEach-Object { Start-Sleep -Seconds 3; Stop-Process -Id $_.Id -Force } 2>$null || echo "App test completed"
 
     - name: Upload executable as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.executable_name }}
         path: dist/${{ matrix.executable_name }}
@@ -128,7 +128,7 @@ jobs:
         cat build-info.md
 
     - name: Upload build info
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-info
         path: build-info.md
