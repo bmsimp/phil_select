@@ -83,21 +83,19 @@ jobs:
         
     - name: Test executable briefly (Windows)
       if: runner.os == 'Windows'
+      shell: pwsh
       run: |
         cd dist
-        # Start the app in background, wait, then attempt to stop it only if it still exists
-        Start-Process -FilePath ".\${{ matrix.executable_name }}" -PassThru | ForEach-Object {
-          $$processId = $_.Id
-          Start-Sleep -Seconds 3
-          if (Get-Process -Id $$processId -ErrorAction SilentlyContinue) {
-            try {
-              Stop-Process -Id $$processId -Force -ErrorAction Stop
-            } catch {
-              Write-Host "Warning: failed to stop process $$processId : $$_"
-            }
-          } else {
-            Write-Host "Process $$processId already exited."
+        $proc = Start-Process -FilePath ".\${{ matrix.executable_name }}" -PassThru
+        Start-Sleep -Seconds 3
+        if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
+          try {
+            Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+          } catch {
+            Write-Host "Warning: failed to stop process $($proc.Id): $_"
           }
+        } else {
+          Write-Host "Process $($proc.Id) already exited."
         }
         Write-Host "App test completed"
 
