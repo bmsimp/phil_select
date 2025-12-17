@@ -3,6 +3,9 @@ name: Build and Release Executables
 on:
   release:
     types: [ created ]
+  push:
+    branches-ignore:
+      - main
 
 permissions:
   contents: write
@@ -80,25 +83,24 @@ jobs:
         
     - name: Test executable briefly (Windows)
       if: runner.os == 'Windows'
+      shell: pwsh
       run: |
         cd dist
-        # Start the app in background, wait, then attempt to stop it only if it still exists
-        Start-Process -FilePath ".\${{ matrix.executable_name }}" -PassThru | ForEach-Object {
-          $pid = $_.Id
-          Start-Sleep -Seconds 3
-          if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
-            try {
-              Stop-Process -Id $pid -Force -ErrorAction Stop
-            } catch {
-              Write-Host "Warning: failed to stop process $pid: $_"
-            }
-          } else {
-            Write-Host "Process $pid already exited."
+        $proc = Start-Process -FilePath ".\${{ matrix.executable_name }}" -PassThru
+        Start-Sleep -Seconds 3
+        if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
+          try {
+            Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+          } catch {
+            Write-Host "Warning: failed to stop process $($proc.Id): $_"
           }
+        } else {
+          Write-Host "Process $($proc.Id) already exited."
         }
         Write-Host "App test completed"
 
     - name: Upload executable as artifact
+      if: github.event_name == 'release'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.executable_name }}
