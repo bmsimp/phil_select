@@ -48,12 +48,14 @@ def difficulty_class(difficulty):
     if not difficulty:
         return "secondary"
     difficulty_lower = difficulty.lower()
-    if "easy" in difficulty_lower or "1" in difficulty:
-        return "success"
-    elif "moderate" in difficulty_lower or "2" in difficulty:
-        return "warning" 
-    elif "strenuous" in difficulty_lower or "difficult" in difficulty_lower or "3" in difficulty:
-        return "danger"
+    if "challenging" in difficulty_lower:
+        return "C"
+    elif "rugged" in difficulty_lower:
+        return "R"
+    elif "super strenuous" in difficulty_lower:
+        return "SS"
+    elif "strenuous" in difficulty_lower:
+        return "S"
     else:
         return "secondary"
 
@@ -65,12 +67,14 @@ def difficulty_abbrev(difficulty):
     if not difficulty:
         return difficulty
     difficulty_lower = difficulty.lower()
-    if "easy" in difficulty_lower:
-        return "Easy"
-    elif "moderate" in difficulty_lower:
-        return "Mod"
-    elif "strenuous" in difficulty_lower or "difficult" in difficulty_lower:
-        return "Hard"
+    if "challenging" in difficulty_lower:
+        return "C"
+    elif "rugged" in difficulty_lower:
+        return "R"
+    elif "super strenuous" in difficulty_lower:
+        return "SS"
+    elif "strenuous" in difficulty_lower:
+        return "S"
     else:
         return difficulty
 
