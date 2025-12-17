@@ -84,16 +84,16 @@ jobs:
         cd dist
         # Start the app in background, wait, then attempt to stop it only if it still exists
         Start-Process -FilePath ".\${{ matrix.executable_name }}" -PassThru | ForEach-Object {
-          $pid = $_.Id
+          $$pid = $_.Id
           Start-Sleep -Seconds 3
-          if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
+          if (Get-Process -Id $$pid -ErrorAction SilentlyContinue) {
             try {
-              Stop-Process -Id $pid -Force -ErrorAction Stop
+              Stop-Process -Id $$pid -Force -ErrorAction Stop
             } catch {
-              Write-Host "Warning: failed to stop process $pid: $_"
+              Write-Host "Warning: failed to stop process $$pid: $$_"
             }
           } else {
-            Write-Host "Process $pid already exited."
+            Write-Host "Process $$pid already exited."
           }
         }
         Write-Host "App test completed"
